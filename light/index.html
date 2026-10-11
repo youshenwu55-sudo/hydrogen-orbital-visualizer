@@ -1,0 +1,2349 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f7f9">
+  <meta name="description" content="氢原子与类氢离子轨道的交互式波函数可视化。支持点云、概率等值面、径向分布及数值自检；完全离线运行。">
+  <title>原子轨道 · 浅色学术版</title>
+  <style>:root{
+  color-scheme:dark; --page:#11151a;--panel:#191e25;--surface:#20262e;--stage-bg:#14191f;
+  --text:#e2e7ed;--muted:#a4afbc;--faint:#8492a2;--line:#303943;--line-soft:#262e37;
+  --accent:#9db8cc;--accent-bg:#2a3846;--accent-text:#e2eef8;--positive:#de8069;--negative:#7da5ce;
+  --plot-line:#8ab0d1;--gold:#c5a464;--green:#82ac98;--focus:#b9d2e7;--stage-cover:rgba(20,25,31,.84);
+  --good:#a0c9ad;--error-bg:#3a2528;--error-ink:#efb5b5;--button-hover:#29323c;
+  --ui:"Inter","Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;--serif:"STIX Two Text","Cambria Math","Times New Roman",serif;
+}
+:root[data-theme=light]{
+  color-scheme:light;--page:#ebedf0;--panel:#fff;--surface:#f2f4f6;--stage-bg:#f6f7f9;
+  --text:#222c37;--muted:#596675;--faint:#667382;--line:#d2d9e0;--line-soft:#e4e8ed;
+  --accent:#476c89;--accent-bg:#e4edf4;--accent-text:#254f6d;--positive:#b95642;--negative:#3d6f9f;
+  --plot-line:#3d6f9f;--gold:#927226;--green:#477c67;--focus:#356b93;--stage-cover:rgba(246,247,249,.87);
+  --good:#32704b;--error-bg:#fae9e8;--error-ink:#8b302b;--button-hover:#eaf0f5;
+}
+*{box-sizing:border-box} [hidden]{display:none!important} html,body{margin:0;min-height:100%;height:100%}
+body{background:var(--page);color:var(--text);font:13px/1.5 var(--ui);-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,a{-webkit-tap-highlight-color:transparent}button,a,input{touch-action:manipulation}button,input{font:inherit}button{cursor:pointer}button:disabled{cursor:default}
+button:focus-visible,a:focus-visible,input:focus-visible,canvas:focus-visible,summary:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+button{color:inherit}a{color:var(--accent)}svg{width:17px;height:17px;stroke:currentColor;stroke-width:1.45;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+sub,sup{line-height:0}sub{font-size:.67em;vertical-align:-.2em}sup{font-size:.67em;vertical-align:.48em}p{margin:0}.math{font-family:var(--serif)}
+#app{height:100dvh;min-height:550px;display:flex;flex-direction:column}.app-header{height:78px;flex:0 0 78px;background:var(--panel);border-bottom:1px solid var(--line);padding:0 26px;display:flex;align-items:center;justify-content:space-between;gap:22px}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}.brand-mark{width:38px;height:42px;display:grid;place-items:center;border:1px solid var(--line);font:italic 33px/1 var(--serif);color:var(--accent);padding-bottom:5px}
+.eyebrow{font-size:10px;letter-spacing:1.8px;color:var(--muted);font-weight:500}.brand-eyebrow{font-size:9px;letter-spacing:2px;margin-bottom:3px}.brand h1{font-size:16px;font-weight:550;letter-spacing:.4px;margin:0;white-space:nowrap}
+.header-actions{display:flex;align-items:center;gap:9px;flex-shrink:0}.theme-switch{display:flex;gap:2px;padding:3px;background:var(--surface);border:1px solid var(--line);border-radius:5px;margin-right:7px}
+.theme-switch a{color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;min-height:29px;padding:3px 9px;font-size:11px;text-decoration:none;border:1px solid transparent;border-radius:3px}.theme-switch a[aria-current=page]{color:var(--text);background:var(--panel);border-color:var(--line)}.theme-switch svg{width:14px;height:14px}
+.btn{background:transparent;border:1px solid var(--line);border-radius:4px;padding:7px 11px;min-height:34px;font-size:12px;line-height:1.4;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,color .15s}.btn:hover{background:var(--button-hover);color:var(--text)}.btn.primary{background:var(--accent-bg);color:var(--accent-text);border-color:var(--accent)}.btn.primary:hover{filter:brightness(1.07)}.btn.text-btn{border-color:transparent;min-width:32px;padding-left:6px;padding-right:6px;color:var(--muted)}.btn.wide{width:100%}.btn.icon-btn{width:34px;padding:7px}.btn:disabled{opacity:.55}
+.workspace{display:grid;flex:1;min-height:0;grid-template-columns:minmax(0,1fr) 338px;grid-template-rows:minmax(285px,1fr) 228px;grid-template-areas:"stage panel" "analysis panel";gap:0}
+#stage{grid-area:stage;position:relative;min-width:0;overflow:hidden;background:var(--stage-bg)}#glcanvas,#overlay{position:absolute;inset:0;display:block;width:100%;height:100%}#glcanvas{cursor:grab;touch-action:none}#glcanvas.drag{cursor:grabbing}#overlay{pointer-events:none}
+.stage-bar{position:absolute;left:0;right:0;top:0;height:56px;padding:0 25px;border-bottom:1px solid var(--line-soft);display:flex;justify-content:space-between;align-items:center;gap:18px;background:var(--stage-bg)}.section-index{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);white-space:nowrap}.section-index>span:first-child{font:10px var(--mono);color:var(--faint);padding-right:10px;border-right:1px solid var(--line)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;padding:3px;border:1px solid var(--line);background:var(--surface);border-radius:5px}.seg button{background:transparent;border:1px solid transparent;border-radius:3px;font-size:11.5px;padding:5px 8px;min-height:29px;color:var(--muted);white-space:nowrap}.seg button.on{color:var(--accent-text);background:var(--accent-bg);border-color:var(--accent)}.seg button:hover{color:var(--text)}#modeSeg{min-width:200px;background:transparent}#modeSeg button{font-size:11px;min-height:27px;padding:4px 13px}
+#badge{position:absolute;left:28px;top:79px;pointer-events:none;user-select:none}.orbital-line{display:flex;align-items:center;gap:19px;margin-top:3px}.t1{font:48px/1.2 var(--serif);letter-spacing:-.5px;min-height:57px}.t1 sub{font-size:.55em}.state-caption{display:flex;flex-direction:column;gap:4px;border-left:1px solid var(--line);padding-left:17px;color:var(--muted);font-size:11px}#ionBadge{color:var(--text);font-size:13px;font-weight:500}#stateMeta{font:10px var(--mono)}.t2{color:var(--muted);font-size:16px;margin-top:7px}
+.phase-legend{position:absolute;right:25px;top:84px;color:var(--muted);font-size:11px;text-align:right}.legend-caption{font-size:10px;margin-bottom:7px}.phase-signs{display:flex;gap:16px;justify-content:flex-end;font:14px var(--serif);color:var(--text)}.phase-signs i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.positive{background:var(--positive)}.negative{background:var(--negative)}.legend-foot{font-size:10px;color:var(--faint);margin-top:8px}
+.scene-tools{position:absolute;left:24px;bottom:65px;display:flex;gap:5px}.scene-tools .btn{background:var(--stage-bg);min-height:30px;font-size:10.5px;padding:5px 9px}.scene-tools .icon-btn{width:30px;padding:5px}.scene-tools svg{width:14px;height:14px}.stage-status{position:absolute;left:0;right:0;bottom:0;height:39px;border-top:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 25px;background:var(--stage-bg);font-size:10px;color:var(--faint)}#renderStatus{font-family:var(--mono);text-align:right}
+#loading{position:absolute;inset:56px 0 39px;display:none;align-items:center;justify-content:center;z-index:5;background:var(--stage-cover);pointer-events:none}#loading.on{display:flex}.loading-box{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:12px 18px;font-size:12px;color:var(--muted);max-width:90%}.spin{width:13px;height:13px;flex-shrink:0;border:1.5px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+#fatalError{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(440px,85%);background:var(--panel);border:1px solid var(--line);padding:24px;z-index:8}#fatalError h2{font-size:16px;margin-top:0}#fatalError p{color:var(--muted);line-height:1.8}
+#panel{grid-area:panel;display:flex;flex-direction:column;min-height:0;min-width:0;border-left:1px solid var(--line);background:var(--panel)}.panel-heading{height:56px;flex:0 0 56px;padding:0 23px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line-soft);font-size:12px;font-weight:550}.model-tag{font-size:10px;color:var(--faint);font-weight:400}.panel-tabs{display:flex;flex:0 0 46px;padding:0 22px;gap:27px;border-bottom:1px solid var(--line-soft)}.panel-tabs button{position:relative;font-size:12px;padding:0 1px;border:0;background:none;color:var(--muted)}.panel-tabs button.on{color:var(--text);font-weight:550}.panel-tabs button.on:after{position:absolute;content:"";height:2px;bottom:-1px;left:0;right:0;background:var(--accent)}
+.panel-scroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;scrollbar-gutter:stable}.tab-pane{padding:20px 22px 24px}.sec{margin:0 0 19px;padding:0 0 19px;border-bottom:1px solid var(--line-soft)}.sec:last-child{border-bottom:0;margin-bottom:0}.sec h2,.field h2{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11.5px;color:var(--muted);font-weight:500;margin:0 0 10px;line-height:1.5}.field{margin-top:19px}.field:first-child{margin-top:0}.symbol{font:italic 15px var(--serif);color:var(--faint)}.unit-label{font:10px var(--mono);color:var(--faint)}.presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.preset{font:17px var(--serif);border:1px solid var(--line);background:transparent;min-height:35px;border-radius:4px}.preset.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent-text)}.preset:hover{background:var(--button-hover)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.fixed-six{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}.chip{min-height:34px;padding:5px 8px;border:1px solid var(--line);border-radius:4px;background:transparent;color:var(--text);font-size:13px;font-variant-numeric:tabular-nums;line-height:1.2}.fixed-six .chip{padding:4px 2px}.chip:hover{background:var(--button-hover);border-color:var(--accent)}.chip.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent-text)}.chip:disabled{opacity:.26;background:transparent;border-color:var(--line)}.chip .minor{display:block;font:9px var(--mono);color:var(--faint);margin-top:3px}.chip.on .minor{color:var(--muted)}.orbital-chips .chip{min-width:52px;font:16px var(--serif);flex:1 0 auto;max-width:100%;}.orbital-chips .minor{font:9px var(--mono);margin-top:5px}.ion-chips .chip{font-size:11px;min-height:33px}.basis-note{font-size:10px!important;margin-top:8px!important;line-height:1.65!important}
+.row{display:flex;align-items:center;gap:8px;justify-content:space-between;margin:10px 0 6px;font-size:11.5px;color:var(--muted)}.row:first-child{margin-top:0}.row label{flex:1}.val{font:12px var(--mono);color:var(--text);white-space:nowrap}.range-ends{display:flex;justify-content:space-between;font:9px var(--mono);color:var(--faint);margin-top:3px}.threshold-row{padding:10px 0;border-bottom:1px solid var(--line-soft);gap:4px;font-size:10px}.threshold-row>.val{font-size:10px;margin-left:auto}.sublabel{color:var(--muted);font-size:11px;margin:9px 0 7px}.note{font-size:11px;color:var(--muted);line-height:1.7;margin-top:10px;overflow-wrap:anywhere}.body-note{font-size:12px;color:var(--muted);line-height:1.9}.tiny{font-size:9px;color:var(--faint)}
+input[type=range]{appearance:none;-webkit-appearance:none;display:block;width:100%;height:20px;margin:0;cursor:pointer;background:transparent;accent-color:var(--accent)}input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:linear-gradient(to right,var(--accent) 0%,var(--accent) var(--fill,25%),var(--line) var(--fill,25%),var(--line) 100%)}input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:11px;height:11px;margin-top:-4px;border-radius:50%;border:2px solid var(--panel);outline:1px solid var(--accent);background:var(--accent)}input[type=range]::-moz-range-track{height:3px;background:var(--line);border-radius:2px}input[type=range]::-moz-range-progress{height:3px;background:var(--accent)}input[type=range]::-moz-range-thumb{width:9px;height:9px;border:2px solid var(--panel);outline:1px solid var(--accent);border-radius:50%;background:var(--accent)}
+.energy-summary{display:grid;grid-template-columns:1.3fr 1fr;gap:15px}.energy-summary>div+div{border-left:1px solid var(--line);padding-left:16px}.energy-summary .sublabel{display:block;margin:0 0 5px;font-size:10px}.energy-summary strong{font:15px var(--mono);display:block;color:var(--text)}.energy-summary .tiny{display:block;margin-top:4px}
+.sw{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;padding:12px 0;border-bottom:1px solid var(--line-soft);font-size:12px}.sw:last-child{border-bottom:0;padding-bottom:0}.sw:first-of-type{padding-top:4px}.sw small{display:block;margin-top:4px;font-size:10px;color:var(--faint)}.sw input{position:absolute;right:0;opacity:0;width:32px;height:18px;margin:0;cursor:pointer}.switch{width:30px;height:17px;border-radius:12px;background:var(--line);position:relative;pointer-events:none;flex-shrink:0}.switch:after{content:"";position:absolute;width:11px;height:11px;border-radius:50%;left:3px;top:3px;background:var(--faint);transition:transform .16s}.sw input:checked+.switch{background:var(--accent)}.sw input:checked+.switch:after{transform:translateX(13px);background:var(--panel)}.sw input:focus-visible+.switch{outline:2px solid var(--focus);outline-offset:3px}.formula{font:14px/1.95 var(--serif);padding:14px 12px;margin-top:15px;background:var(--surface);border-left:2px solid var(--accent);overflow-wrap:anywhere}.formula b{font-weight:500;color:var(--accent)}.formula .formula-caption{font:10px/1.7 var(--ui);color:var(--faint);display:block;margin-top:5px}.state-detail{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line-soft);padding-top:12px;margin-top:14px;font-size:11px;color:var(--muted)}#vState{font:14px var(--serif);color:var(--text);text-align:right}.verify{font:10px/1.8 var(--mono);padding:12px;margin-top:12px;background:var(--surface);border:1px solid var(--line);max-height:340px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}.verify .ok{color:var(--good)}.verify .bad{color:var(--error-ink)}#verifyBtn{margin-top:12px}.references a{display:flex;justify-content:space-between;gap:8px;font-size:10px;text-decoration:none;margin-top:9px}.references a:hover{text-decoration:underline}
+.panel-footer{flex:0 0 38px;height:38px;border-top:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 22px;font-size:9px;color:var(--faint)}.status-dot{width:5px;height:5px;background:var(--green);border-radius:50%}.footer-model{margin-left:auto;font-family:var(--mono)}
+#analysis{grid-area:analysis;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(285px,.9fr);background:var(--panel);border-top:1px solid var(--line);min-width:0}.radial-chart{min-width:0;padding:19px 24px 13px;display:flex;flex-direction:column}.analysis-heading{height:23px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.analysis-heading h2{margin:0;font-size:12px;font-weight:500;color:var(--text)}.radial-formula{font-size:14px;color:var(--muted);white-space:nowrap}.plot{width:100%;height:143px;display:block;min-width:0;flex:1;min-height:80px}.plot-legend{display:flex;gap:15px;font-size:9px;color:var(--muted);align-items:center;justify-content:center;flex-wrap:wrap;margin-top:4px}.plot-legend>span{display:flex;align-items:center;gap:4px}.plot-legend i{width:11px;height:2px;display:inline-block}.plot-legend .curve{background:var(--plot-line)}.plot-legend .mp{background:var(--gold)}.plot-legend .mean{background:var(--green)}
+.radial-data{border-left:1px solid var(--line-soft);padding:19px 24px 13px;min-width:0}.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;margin:7px 0 12px}.stats-grid>div{min-width:0}.stats-grid dt{font-size:10px;color:var(--muted);margin:0 0 4px}.stats-grid dd{margin:0;font:14px var(--mono);color:var(--text);white-space:nowrap}.stats-grid dd .metric-unit{font-size:10px;color:var(--muted)}.stats-grid dd small{display:block;font:9px var(--mono);color:var(--faint);margin-top:3px}.node-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line-soft);padding-top:9px;font-size:10px;color:var(--muted)}#vNodes{font:12px var(--mono);color:var(--text)}
+.collapsed .workspace{grid-template-columns:1fr;grid-template-rows:1fr;grid-template-areas:"stage"}.collapsed #panel,.collapsed #analysis{display:none}.collapsed #collapseBtn{background:var(--accent-bg);border-color:var(--accent)}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);color:var(--text);border-radius:5px;padding:9px 16px;font-size:12px;max-width:90vw;z-index:60;opacity:0;pointer-events:none;transition:opacity .15s}#toast.on{opacity:1}#errbar{position:fixed;left:24px;bottom:24px;max-width:min(640px,calc(100vw - 48px));z-index:70;padding:12px 16px;border:1px solid var(--error-ink);background:var(--error-bg);color:var(--error-ink);font-size:12px;white-space:pre-wrap;border-radius:4px}
+dialog{max-width:540px;width:calc(100vw - 40px);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:25px;color:var(--text)}dialog::backdrop{background:rgba(10,15,22,.5)}dialog h2{font-size:16px;margin:0 0 10px}dialog p{font-size:12px;color:var(--muted)}dialog input{width:100%;margin:18px 0;color:var(--text);background:var(--surface);border:1px solid var(--line);padding:9px;font:11px var(--mono)}dialog form>.btn{float:right}.noscript{position:fixed;inset:0;display:grid;place-items:center;background:var(--panel);z-index:100;padding:30px}
+@media(min-width:1600px){.workspace{grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:minmax(380px,1fr) 250px}.tab-pane{padding:24px 26px}.stage-bar{padding:0 30px}#badge{left:33px;top:89px}.phase-legend{right:30px;top:94px}.radial-chart,.radial-data{padding:23px 30px 16px}.stats-grid{gap:17px 22px;margin:12px 0 15px}}
+@media(max-width:1180px){.app-header{padding:0 19px;height:70px;flex-basis:70px}.brand h1{font-size:14px}.brand-mark{width:33px;height:37px;font-size:29px}.brand{gap:10px}.header-actions{gap:5px}.theme-switch{margin-right:0}.workspace{grid-template-columns:minmax(0,1fr) 316px;grid-template-rows:minmax(290px,1fr) 223px}.tab-pane{padding:18px 19px}.panel-tabs{padding:0 19px;gap:24px}.stage-bar{padding:0 20px}.phase-legend .legend-foot{display:none}#badge{left:22px}.radial-chart{padding:17px 18px 12px}.radial-data{padding:17px 18px 12px}#analysis{grid-template-columns:minmax(0,1fr) minmax(250px,.85fr)}.radial-formula{display:none}.stats-grid{gap:11px 10px}.stats-grid dd{font-size:13px}.plot-legend{gap:8px;font-size:8px}.stage-status{padding:0 20px;font-size:9px}.btn#collapseBtn span{display:none}.btn#collapseBtn{padding:7px}}
+@media(max-height:780px) and (min-width:901px){.workspace{grid-template-rows:minmax(280px,1fr) 203px}.radial-chart,.radial-data{padding-top:13px;padding-bottom:10px}.stats-grid{gap:8px 12px;margin-top:5px;margin-bottom:7px}.stats-grid dt{font-size:9px}.stats-grid dd{font-size:13px}.stats-grid dd small{font-size:8px}.node-summary{padding-top:6px}.tab-pane{padding-top:17px}.sec{margin-bottom:15px;padding-bottom:15px}.field{margin-top:16px}#badge{top:75px}.t1{font-size:41px;min-height:49px}.t2{font-size:14px}.phase-legend{top:80px}}
+@media(max-width:900px){body{overflow:auto}#app{height:auto;min-height:100dvh}.app-header{height:auto;min-height:74px;flex-wrap:wrap;flex:0 0 auto;padding:14px 18px;gap:12px}.brand h1{font-size:15px}.header-actions{margin-left:auto}.theme-switch a{padding:3px 7px}.header-actions #shotBtn{padding:7px 9px}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 310px;grid-template-rows:470px auto;grid-template-areas:"stage panel" "analysis analysis";flex:none}.panel-scroll{max-height:650px}.panel-heading{height:52px;flex-basis:52px}#analysis{grid-template-columns:1.1fr 1fr;min-height:228px}.phase-legend{top:183px;right:21px}.phase-signs{gap:12px;font-size:12px}.legend-caption{display:none}.t1{font-size:42px}.t2{font-size:14px}.stage-bar .section-index{gap:7px;font-size:10px}#modeSeg{min-width:165px}#modeSeg button{font-size:10px;padding:4px 8px}.stage-status #hint{max-width:180px}.stage-status #renderStatus{font-size:8px}.collapsed .workspace{height:calc(100dvh - 75px);min-height:420px}.collapsed #stage{height:100%}.collapsed .phase-legend{top:84px}}
+@media(max-width:680px){.app-header{padding:12px 15px;gap:11px}.brand{width:100%}.brand-eyebrow{font-size:8px}.brand h1{font-size:15px}.brand-mark{height:36px}.header-actions{margin:0;width:100%;justify-content:flex-end}.theme-switch{margin-right:auto}.header-actions #collapseBtn span{display:inline}.header-actions .btn{font-size:11px;min-height:32px;padding:6px 8px}.header-actions #collapseBtn span{font-size:10px}.header-actions .icon-label svg{width:14px;height:14px}.theme-switch a{min-height:26px}.workspace{display:flex;flex-direction:column}.workspace #stage{height:480px;flex:0 0 480px}.stage-bar{height:51px;padding:0 18px}#badge{top:74px;left:19px}.t1{font-size:44px}.state-caption{font-size:10px}.phase-legend{right:18px;top:184px}.phase-signs{font-size:12px}.stage-status{padding:0 17px;font-size:8px}.stage-status #hint{max-width:none}.scene-tools{left:18px;bottom:66px}.scene-tools .btn{min-height:32px}.workspace #analysis{order:2;display:grid;grid-template-columns:1fr;min-height:0}.radial-chart{height:217px;padding:18px 18px 13px}.radial-formula{display:block}.plot-legend{font-size:9px;gap:16px}.radial-data{padding:18px;border-left:0;border-top:1px solid var(--line-soft)}.stats-grid{gap:14px 30px;margin:10px 0 14px}.stats-grid dt{font-size:10px}.stats-grid dd{font-size:15px}.stats-grid dd small{font-size:10px}.node-summary{padding-top:11px}.workspace #panel{order:3;border-left:0;border-top:1px solid var(--line)}.panel-heading{padding:0 19px}.panel-tabs{padding:0 19px;gap:34px;flex-basis:49px}.panel-tabs button{font-size:13px}.panel-scroll{overflow:visible;max-height:none}.tab-pane{padding:23px 20px}.chip{min-height:40px}.preset{min-height:39px}.fixed-six .chip{min-height:38px}.orbital-chips .chip{min-height:45px}.sec h2{font-size:12px}.note{font-size:12px}.panel-footer{padding:0 20px}.collapsed .workspace{height:calc(100dvh - 123px);min-height:410px;display:block}.collapsed .workspace #stage{height:100%;min-height:410px}.collapsed .workspace #analysis,.collapsed .workspace #panel{display:none}.collapsed .phase-legend{top:184px}#loading{inset:51px 0 39px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}.spin{animation-duration:1.7s}}
+@media print{body{overflow:visible}.app-header .header-actions,#panel,.scene-tools,#loading{display:none!important}#app{height:auto}.workspace{display:block}#stage{height:500px}#analysis{display:grid;grid-template-columns:1fr 1fr;min-height:230px}}
+
+/* Keep all viewport chrome outside the narrow-screen drawing area. */
+#app{overflow:clip}
+.brand>div:last-child{min-width:0}
+.stage-status #hint{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stage-status #renderStatus{flex-shrink:0}
+.plot-legend{font-size:10px}
+.legend-foot{color:var(--muted)}
+@media(max-width:1180px){.plot-legend{font-size:9px}}
+@media(max-width:900px){#app{overflow:visible}.t2{display:none}.phase-legend{top:143px;left:22px;right:auto;text-align:left}.phase-signs{justify-content:flex-start}.collapsed .phase-legend{top:143px}}
+@media(max-width:680px){.brand h1{white-space:normal}.workspace #stage{height:550px;flex-basis:550px}.workspace #panel{order:2}.workspace #analysis{order:3}.phase-legend{top:142px;left:20px;right:auto}.collapsed .phase-legend{top:142px}.collapsed .workspace #stage{min-height:450px}.plot-legend{font-size:10px}}
+@media(max-width:360px){.brand h1{font-size:14px}.header-actions #collapseBtn span{display:none}.theme-switch a span{display:none}.theme-switch a{padding:4px 10px}.header-actions{gap:6px}.header-actions #shotBtn{font-size:10px}.t1{font-size:39px}.orbital-line{gap:13px}.state-caption{padding-left:12px}.plot-legend{gap:9px;font-size:9px}}
+
+/* Canvas intrinsic dimensions must not determine the height of the grid row. */
+#analysis,.radial-chart{min-height:0}
+.plot{height:0;min-height:0;flex:1 1 0}
+.analysis-heading,.plot-legend{flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">ψ</div>
+      <div><div class="eyebrow brand-eyebrow">HYDROGENIC ORBITALS</div><h1 data-i18n="title">原子轨道 · 波函数可视化</h1></div>
+    </div>
+    <nav class="header-actions" aria-label="界面与导出" data-i18n-aria="a_header">
+      <div class="theme-switch" aria-label="主题" data-i18n-aria="a_theme">
+        <a href="../dark/index.html" data-theme-link="dark" title="暗色主题" data-i18n-title="dark_theme"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 12.3A7 7 0 0 1 7.7 3.5a7 7 0 1 0 8.8 8.8Z"/></svg><span data-i18n="dark">暗色</span></a>
+        <a href="../light/index.html" data-theme-link="light" title="浅色主题" data-i18n-title="light_theme"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.1"/><path d="M10 1v2m0 14v2M1 10h2m14 0h2M3.6 3.6 5 5m10 10 1.4 1.4M3.6 16.4 5 15M15 5l1.4-1.4"/></svg><span data-i18n="light">浅色</span></a>
+      </div>
+      <button class="btn text-btn" id="langBtn" aria-label="Switch to English">EN</button>
+      <button class="btn icon-label" id="collapseBtn" aria-pressed="false" title="专注视图" data-i18n-title="focus"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 3H3v4m10-4h4v4M3 13v4h4m10-4v4h-4"/></svg><span id="focusLabel" data-i18n="focus">专注视图</span></button>
+      <button class="btn primary icon-label" id="shotBtn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v10m-3-3 3 3 3-3M3 13v4h14v-4"/></svg><span data-i18n="v_shot">导出 PNG</span></button>
+    </nav>
+  </header>
+
+  <main class="workspace">
+    <section id="stage" aria-label="三维轨道视图" data-i18n-aria="a_stage">
+      <canvas id="glcanvas" tabindex="0" aria-label="三维轨道。拖动旋转、滚轮缩放；键盘方向键旋转，加减键缩放，Home 复位。" data-i18n-aria="a_canvas"></canvas>
+      <canvas id="overlay" aria-hidden="true"></canvas>
+      <div class="stage-bar">
+        <div class="section-index"><span>01</span><span data-i18n="view_title">轨道视图</span></div>
+        <div class="seg" id="modeSeg" role="group" aria-label="显示方式" data-i18n-aria="s_mode">
+          <button data-mode="points" class="on" aria-pressed="true" data-i18n="m_points">概率点云</button>
+          <button data-mode="iso" aria-pressed="false" data-i18n="m_iso">概率等值面</button>
+        </div>
+      </div>
+      <div id="badge">
+        <div class="eyebrow" data-i18n="current_orbital">当前轨道</div>
+        <div class="orbital-line"><div class="t1" id="badgeTitle">2p<sub>z</sub></div><div class="state-caption"><span id="ionBadge">H</span><span id="stateMeta">n = 2 · l = 1 · m = 0</span></div></div>
+        <div class="t2 math">ψ(r, θ, φ) = R<sub>nl</sub>(r) Y<sup>R</sup><sub>lm</sub>(θ, φ)</div>
+      </div>
+      <div id="phaseLegend" class="phase-legend">
+        <div class="legend-caption" data-i18n="phase_key">实波函数符号</div>
+        <div class="phase-signs"><span><i class="positive"></i>ψ &gt; 0</span><span><i class="negative"></i>ψ &lt; 0</span></div>
+        <div class="legend-foot" data-i18n="phase_note">颜色表示符号，疏密表示概率</div>
+      </div>
+      <div class="scene-tools" role="group" aria-label="视角控制" data-i18n-aria="a_camera">
+        <button class="btn" id="resetBtn" title="重置视角" data-i18n-title="v_reset"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.7 6.8A6.7 6.7 0 1 1 3.4 12M3 3v5h5"/></svg><span data-i18n="reset_short">复位</span></button>
+        <button class="btn icon-btn" id="zoomOutBtn" title="缩小" aria-label="缩小" data-i18n-title="zoom_out" data-i18n-aria="zoom_out"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12"/></svg></button>
+        <button class="btn icon-btn" id="zoomInBtn" title="放大" aria-label="放大" data-i18n-title="zoom_in" data-i18n-aria="zoom_in"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12M10 4v12"/></svg></button>
+      </div>
+      <footer class="stage-status"><span id="hint" data-i18n="hint">拖动旋转 · 滚轮缩放 · 双击复位</span><span id="renderStatus" role="status">—</span></footer>
+      <div id="loading" role="status" aria-live="polite"><div class="loading-box"><span class="spin" aria-hidden="true"></span><span id="loadingTxt">计算中…</span></div></div>
+      <div id="fatalError" role="alert" hidden><h2 data-i18n="webgl_title">无法启动三维视图</h2><p data-i18n="webgl_help">此浏览器未能创建 WebGL 上下文。请在浏览器中开启硬件加速后重新打开，或使用支持 WebGL 的浏览器。</p></div>
+    </section>
+
+    <aside id="panel" aria-label="控制与模型说明" data-i18n-aria="a_panel">
+      <div class="panel-heading"><span data-i18n="controls">控制面板</span><span class="model-tag" data-i18n="model_tag">单电子模型</span></div>
+      <div class="panel-tabs" role="tablist" aria-label="控制分组" data-i18n-aria="a_tabs">
+        <button id="tab-orbital" role="tab" aria-selected="true" aria-controls="pane-orbital" data-tab="orbital" class="on" data-i18n="tab_orbital">轨道</button>
+        <button id="tab-appearance" role="tab" aria-selected="false" aria-controls="pane-appearance" data-tab="appearance" tabindex="-1" data-i18n="tab_appearance">显示</button>
+        <button id="tab-theory" role="tab" aria-selected="false" aria-controls="pane-theory" data-tab="theory" tabindex="-1" data-i18n="tab_theory">模型说明</button>
+      </div>
+      <div class="panel-scroll">
+        <div id="pane-orbital" class="tab-pane" role="tabpanel" aria-labelledby="tab-orbital">
+          <section class="sec preset-section"><h2 data-i18n="presets">常用轨道</h2><div class="presets" id="presets" role="group" aria-label="常用轨道" data-i18n-aria="presets">
+            <button class="preset" data-preset="1,0,0">1s</button><button class="preset on" data-preset="2,1,0">2p<sub>z</sub></button><button class="preset" data-preset="3,2,0">3d<sub>z²</sub></button><button class="preset" data-preset="4,3,0">4f<sub>z³</sub></button>
+          </div></section>
+          <section class="sec quantum-section">
+            <div class="field"><h2 id="nLabel"><span data-i18n="s_n">主量子数</span><span class="symbol">n</span></h2><div class="chips fixed-six" id="nChips" role="group" aria-labelledby="nLabel"></div></div>
+            <div class="field"><h2 id="lLabel"><span data-i18n="s_l">角量子数</span><span class="symbol">l</span></h2><div class="chips fixed-six" id="lChips" role="group" aria-labelledby="lLabel"></div></div>
+            <div class="field"><h2 id="mLabel"><span data-i18n="s_m">实球谐分量</span><span class="symbol">m</span></h2><div class="chips orbital-chips" id="mChips" role="group" aria-labelledby="mLabel"></div><div class="note basis-note" data-i18n="basis_short">m 为实球谐基底标签；非零分量由 ±|m| 组合。</div></div>
+            <div class="field"><h2 id="zLabel"><span data-i18n="s_Z">核电荷</span><span class="symbol">Z</span></h2><div class="chips fixed-six ion-chips" id="zChips" role="group" aria-labelledby="zLabel"></div></div>
+          </section>
+          <section class="sec sampling-section" id="secDensity">
+            <h2><span id="samplingTitle" data-i18n="sampling">采样设置</span><span class="unit-label" id="modeSettingTag">|ψ|²</span></h2>
+            <div id="pointControls"><div class="row"><label for="rPts" data-i18n="d_pts">采样点数</label><output class="val" id="vPts" for="rPts">150k</output></div><input type="range" id="rPts" min="20000" max="600000" step="10000" value="150000"><div class="range-ends"><span>20k</span><span>600k</span></div></div>
+            <div id="isoControls" hidden><div class="row"><label for="rIso" data-i18n="d_iso">包络内概率</label><output class="val" id="vIso" for="rIso">90%</output></div><input type="range" id="rIso" min="1" max="99" step="1" value="90"><div class="range-ends"><span>1%</span><span>99%</span></div><div class="row threshold-row" id="rowIsoNum"><span data-i18n="d_isoNum">密度阈值 ρ₀</span><span class="val" id="vIsoNum">—</span><span class="unit-label">a₀⁻³</span></div><div class="sublabel" id="lbIsoRes" data-i18n="d_isoRes">网格精度</div><div class="seg" id="resSeg" role="group" aria-label="网格精度" data-i18n-aria="d_isoRes"><button data-res="128" data-i18n="res_std">标准</button><button data-res="176" class="on" data-i18n="res_high">高</button><button data-res="224" data-i18n="res_ultra">精细</button></div></div>
+            <p class="note" id="densityNote"></p>
+          </section>
+          <div class="energy-summary"><div><span class="sublabel" data-i18n="k_energy">能量 Eₙ</span><strong id="vE">−3.4014 eV</strong></div><div><span class="sublabel" data-i18n="k_degen">壳层简并度</span><strong id="vG">8</strong><span class="tiny" data-i18n="incl_spin">含自旋 · 2n²</span></div></div>
+        </div>
+
+        <div id="pane-appearance" class="tab-pane" role="tabpanel" aria-labelledby="tab-appearance" hidden>
+          <section class="sec"><h2 data-i18n="render_settings">渲染设置</h2>
+            <div class="field" id="pointAppearance"><div class="row"><label for="rInt" data-i18n="v_int">点云强度</label><output class="val" id="vInt" for="rInt">1.00</output></div><input type="range" id="rInt" min="0.15" max="2.5" step="0.05" value="1"><div class="row"><label for="rSize" data-i18n="v_size">粒子尺寸</label><output class="val" id="vSize" for="rSize">1.00</output></div><input type="range" id="rSize" min="0.3" max="3" step="0.05" value="1"></div>
+            <div class="field"><div class="row"><label for="rQual" data-i18n="v_qual">渲染倍率</label><output class="val" id="vQual" for="rQual">1.00×</output></div><input type="range" id="rQual" min="0.75" max="2" step="0.25" value="1"><div class="range-ends"><span>0.75×</span><span>2.00×</span></div></div>
+          </section>
+          <section class="sec"><h2 data-i18n="layers">辅助图层</h2>
+            <label class="sw"><span><span data-i18n="v_phase">波函数符号着色</span><small data-i18n="sign_hint">正负瓣分别标色</small></span><input type="checkbox" id="cPhase" checked><span class="switch" aria-hidden="true"></span></label>
+            <label class="sw"><span><span data-i18n="v_nodes">节面 / 节球</span><small data-i18n="nodes_hint">ψ = 0 的参考线</small></span><input type="checkbox" id="cNodes"><span class="switch" aria-hidden="true"></span></label>
+            <label class="sw"><span><span data-i18n="v_grid">坐标轴与尺度</span><small data-i18n="grid_hint">空间方向与长度参照</small></span><input type="checkbox" id="cGrid" checked><span class="switch" aria-hidden="true"></span></label>
+            <label class="sw"><span><span data-i18n="v_spin">自动旋转</span><small data-i18n="spin_hint">仅旋转观察视角</small></span><input type="checkbox" id="cSpin"><span class="switch" aria-hidden="true"></span></label>
+          </section>
+          <section class="sec"><h2 data-i18n="view_presets">标准视角</h2><div class="seg" id="cameraPresets" role="group" aria-label="标准视角" data-i18n-aria="view_presets"><button data-view="x">+x</button><button data-view="y">+y</button><button data-view="z">+z</button><button data-view="oblique" data-i18n="oblique">斜视</button></div></section>
+          <section class="sec"><h2 data-i18n="reproduce">保存与复现</h2><button class="btn wide icon-label" id="linkBtn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m8 12 4-4M7.5 6 9 4.5a4 4 0 0 1 5.5 5.5L13 11.5m-6 0L5.5 13a4 4 0 0 0 5.5 5.5l1.5-1.5" transform="translate(0 -1.5)"/></svg><span data-i18n="v_link">复制当前视图链接</span></button><p class="note" data-i18n="local_link_note">本地链接用于在同一路径恢复参数；发布到网站后可分享给他人。</p></section>
+        </div>
+
+        <div id="pane-theory" class="tab-pane" role="tabpanel" aria-labelledby="tab-theory" hidden>
+          <section class="sec"><h2 data-i18n="model_scope">模型与约定</h2><p class="body-note" id="mathNote"></p><div class="formula" id="formula"></div><p class="note" data-i18n="basis_long">实球谐采用化学相位约定。m &gt; 0 对应 cos(mφ)，m &lt; 0 对应 sin(|m|φ)；非零分量不是 Lz 本征态。</p><div class="state-detail"><span data-i18n="k_state">当前基函数</span><span id="vState">2p<sub>z</sub></span></div></section>
+          <section class="sec"><h2 data-i18n="reading_figure">如何读图</h2><p class="body-note" id="modeNote"></p><p class="note" data-i18n="reading_note">电子云表示概率分布，不是电子的运动轨迹。颜色仅标记实波函数的正负，不代表正负电荷。</p><p class="note" data-i18n="probability_note">径向概率半径以球内积分定义；等值面按密度阈值定义，两者通常不是同一个边界。</p></section>
+          <section class="sec"><h2 data-i18n="s_math">数值检查</h2><p class="note" data-i18n="verify_hint">检查归一化、节点、Z 标度、采样统计与等值面。结果采用预设容差。</p><button class="btn wide" id="verifyBtn" data-i18n="v_verify">运行数值自检</button><div class="verify" id="verifyOut" style="display:none" role="status"></div></section>
+          <section class="sec references"><h2 data-i18n="references">参考定义</h2><a href="https://dlmf.nist.gov/14.30" target="_blank" rel="noopener noreferrer">NIST DLMF §14.30 · Spherical harmonics <span>↗</span></a><a href="https://dlmf.nist.gov/18.39#ii" target="_blank" rel="noopener noreferrer">NIST DLMF §18.39(ii) · Hydrogen atom <span>↗</span></a></section>
+        </div>
+      </div>
+      <footer class="panel-footer"><span class="status-dot"></span><span data-i18n="local_computation">本地计算</span><span class="footer-model">a₀ = 52.918 pm</span></footer>
+    </aside>
+
+    <section id="analysis" aria-label="径向概率分析" data-i18n-aria="a_analysis">
+      <div class="radial-chart"><div class="analysis-heading"><div class="section-index"><span>02</span><h2 data-i18n="s_data">径向概率分布</h2></div><span class="math radial-formula">P(r) = r² |R<sub>nl</sub>(r)|²</span></div><canvas class="plot" id="plot" role="img" aria-label="径向概率分布曲线" data-i18n-aria="a_plot"></canvas><div class="plot-legend"><span><i class="curve"></i><span data-i18n="lg_rdf">径向概率密度</span></span><span><i class="mp"></i><span data-i18n="lg_mp">最概然半径</span></span><span><i class="mean"></i><span data-i18n="lg_mean">平均半径</span></span></div></div>
+      <div class="radial-data"><div class="analysis-heading"><h2 data-i18n="radial_statistics">径向统计</h2><span class="unit-label">a₀ / pm</span></div><dl class="stats-grid"><div><dt data-i18n="k_mp">最概然半径</dt><dd id="vMP">—</dd></div><div><dt data-i18n="k_mean">平均半径 ⟨r⟩</dt><dd id="vMean">—</dd></div><div><dt data-i18n="k_r90">径向 90% 概率半径</dt><dd id="vR90">—</dd></div><div><dt data-i18n="k_r99">径向 99% 概率半径</dt><dd id="vR99">—</dd></div></dl><div class="node-summary"><span data-i18n="k_nodes">径向 / 角向节点数</span><span id="vNodes">0 / 1</span></div></div>
+    </section>
+  </main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<dialog id="linkDialog"><form method="dialog"><h2 data-i18n="link_dialog_title">复制视图链接</h2><p data-i18n="link_dialog_help">浏览器未授予剪贴板权限。请选中并复制以下链接。</p><input id="linkField" type="text" readonly aria-label="当前视图链接" data-i18n-aria="a_view_link"><button class="btn primary" value="close" data-i18n="close">关闭</button></form></dialog>
+<noscript><div class="noscript">此程序需要启用 JavaScript / Please enable JavaScript to use this visualization.</div></noscript>
+<script>
+"use strict";
+
+/* Visual palette: fixed per document; all physical units remain unchanged. */
+const THEME = Object.freeze((()=>{
+  const isLight = document.documentElement.dataset.theme === 'light';
+  return isLight ? {
+    id:'light', isLight:true, bg:'#f6f7f9', ink:'#25313b', muted:'#5f6e7b', faint:'#8b99a5',
+    positive:'#b95642', negative:'#3d6f9f', neutral:'#476f8b',
+    gold:'#927226', green:'#477c67', plot:'#3d6f9f', line:'#899ba9'
+  } : {
+    id:'dark', isLight:false, bg:'#14191f', ink:'#e5e9ed', muted:'#a4b0bc', faint:'#6f7e8c',
+    positive:'#de8069', negative:'#7da5ce', neutral:'#90aec7',
+    gold:'#c5a464', green:'#82ac98', plot:'#8ab0d1', line:'#586d7f'
+  };
+})());
+function rgb(hex){
+  const v = parseInt(hex.replace('#',''), 16);
+  return [(v>>16 & 255)/255, (v>>8 & 255)/255, (v & 255)/255];
+}
+
+/* =====================================================================
+   氢原子电子云 · 3D 可视化
+   物理内核：库仑势中薛定谔方程的精确解析解（原子单位 a0 = 1, ħ = m_e = e = 1）
+     ψ_nlm(r,θ,φ) = R_nl(r) · Y_lm(θ,φ)
+     R_nl(r) = N · e^{-Zr/n} (2Zr/n)^l L^{2l+1}_{n-l-1}(2Zr/n)
+   电子云按 |ψ|² 概率密度做拒绝采样（径向用逆变换采样，角度用查表拒绝采样）
+   v2：修复节球大圆 / 旧数据残留 / PNG 黑图 / 加载遮罩泄漏；完整支持类氢离子 Z；
+       实球谐采用化学惯例相位（p_x 正瓣指向 +x）；网格常驻 Worker；独立的网格交叉校验
+   ===================================================================== */
+
+/* ==CORE_BEGIN== */
+function CORE(){
+  const PI = Math.PI, SQ = Math.sqrt, AB = Math.abs, EX = Math.exp, LG = Math.log;
+
+  /* ---------- log Γ (Lanczos g=7, n=9) ---------- */
+  const G = [676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,
+             12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];
+  function lgammaln(z){
+    if (z < 0.5) return LG(PI/Math.sin(PI*z)) - lgammaln(1-z);
+    z -= 1;
+    let x = 0.99999999999980993;
+    for (let i=0;i<8;i++) x += G[i]/(z+i+1);
+    const t = z + 7.5;
+    return 0.5*LG(2*PI) + (z+0.5)*LG(t) - t + LG(x);
+  }
+
+  /* ---------- 连带勒让德函数 P_l^m(x)，含 Condon–Shortley 相位 ---------- */
+  function legendre(l,m,x){
+    if (m<0 || m>l) return 0;
+    let pmm = 1;
+    if (m>0){
+      const s = SQ(Math.max(0,(1-x)*(1+x)));
+      let f = 1;
+      for (let i=1;i<=m;i++){ pmm *= -f*s; f += 2; }
+    }
+    if (l===m) return pmm;
+    let pmmp1 = x*(2*m+1)*pmm;
+    if (l===m+1) return pmmp1;
+    let pll = 0;
+    for (let ll=m+2; ll<=l; ll++){
+      pll = ((2*ll-1)*x*pmmp1 - (ll+m-1)*pmm)/(ll-m);
+      pmm = pmmp1; pmmp1 = pll;
+    }
+    return pll;
+  }
+
+  /* ---------- 广义拉盖尔多项式 L_k^α(x) ---------- */
+  function laguerre(k,alpha,x){
+    if (k<=0) return 1;
+    let lm = 1, l = alpha + 1 - x;
+    for (let i=1;i<k;i++){
+      const lp = ((2*i+1+alpha-x)*l - (i+alpha)*lm)/(i+1);
+      lm = l; l = lp;
+    }
+    return l;
+  }
+
+  /* ---------- 径向波函数 R_nl(r) ---------- */
+  function radialNorm(n,l,Z){
+    const rho = 2*Z/n;
+    return SQ(Math.pow(rho,3) * EX(lgammaln(n-l)) / (2*n*EX(lgammaln(n+l+1))));
+  }
+  function radialR(n,l,Z,r){
+    const rho = 2*Z/n;
+    return radialNorm(n,l,Z) * EX(-Z*r/n) * Math.pow(rho*r, l) * laguerre(n-l-1, 2*l+1, rho*r);
+  }
+  // 批量求值版本：把与 r 无关的常数（含两次 logΓ）预先算好；数值与 radialR 一致
+  function radialFn(n,l,Z){
+    const rho = 2*Z/n, rn = radialNorm(n,l,Z), k = n-l-1, a = 2*l+1, zz = Z/n;
+    return function(r){ return rn * EX(-zz*r) * Math.pow(rho*r, l) * laguerre(k, a, rho*r); };
+  }
+
+  /* ---------- 实球谐函数 Y_lm(θ,φ)（实组合，m>0 ∝ cos mφ，m<0 ∝ sin mφ） ----------
+     P_l^m 含 Condon–Shortley 相位 (−1)^m；实组合再乘 (−1)^m 将其抵消，
+     得到化学教材惯例：p_x 正瓣在 +x，d_xz 在 x,z>0 象限为正 */
+  function yNorm(l,am){
+    return SQ((2*l+1)/(4*PI) * EX(lgammaln(l-am+1) - lgammaln(l+am+1)));
+  }
+  function realY(l,m,ct,phi){
+    const am = m<0 ? -m : m;
+    const P = legendre(l,am,ct), N = yNorm(l,am);
+    if (m===0) return N*P;
+    const c = (am & 1 ? -1 : 1)*Math.SQRT2*N;
+    if (m>0)   return c*P*Math.cos(am*phi);
+    return c*P*Math.sin(am*phi);
+  }
+  // 批量求值版本（归一化常数与 logΓ 预先算好）
+  function realYFn(l,m){
+    const am = m<0 ? -m : m, N = yNorm(l,am);
+    if (m===0) return function(ct){ return N*legendre(l,0,ct); };
+    const c = (am & 1 ? -1 : 1)*Math.SQRT2*N;
+    if (m>0) return function(ct,phi){ return c*legendre(l,am,ct)*Math.cos(am*phi); };
+    return function(ct,phi){ return c*legendre(l,am,ct)*Math.sin(am*phi); };
+  }
+
+  /* ================= 角度查找表 |Y|²(θ,φ) ================= */
+  function angTable(l,m,NT,NP){
+    const n1 = NP+1, t = new Float32Array((NT+1)*n1);
+    let mx = 0;
+    for (let i=0;i<=NT;i++){
+      const ct = Math.cos(PI*i/NT);
+      for (let j=0;j<n1;j++){
+        const v = realY(l,m,ct, 2*PI*j/NP);
+        const q = v*v; t[i*n1+j] = q;
+        if (q>mx) mx = q;
+      }
+    }
+    return {t: t, NT: NT, NP: NP, max: mx, n1: n1};
+  }
+  // 对 |Y|² 做双线性插值（i 沿 θ，j 沿 φ）
+  function angLookup(A, iF, jF){
+    const NT = A.NT, NP = A.NP, n1 = A.n1;
+    let i0 = Math.floor(iF); if (i0<0) i0=0; else if (i0>NT-1) i0=NT-1;
+    let j0 = Math.floor(jF); j0 %= NP; if (j0<0) j0+=NP;
+    const fi = iF-i0, fj = jF-j0;
+    const j1 = (j0+1)%NP, i1 = i0+1;
+    const a = A.t[i0*n1+j0], b = A.t[i0*n1+j1], c = A.t[i1*n1+j0], d = A.t[i1*n1+j1];
+    return (a + (b-a)*fj) + ((c + (d-c)*fj) - (a + (b-a)*fj))*fi;
+  }
+
+  /* ================= 径向分布与统计量 ================= */
+  function radialStats(n,l,Z,rmax,NR){
+    const dr = rmax/NR, Rf = radialFn(n,l,Z);
+    const R = new Float64Array(NR+1), p = new Float64Array(NR+1), c = new Float64Array(NR+1);
+    let s = 0;
+    for (let i=0;i<=NR;i++){
+      const r = i*dr, v = Rf(r);
+      R[i] = v; p[i] = v*v*r*r;
+    }
+    c[0] = 0;
+    for (let i=1;i<=NR;i++){ s += 0.5*(p[i]+p[i-1])*dr; c[i] = s; }
+    const norm = s;
+    for (let i=0;i<=NR;i++) c[i] /= norm;
+    // 期望值与最概然半径
+    let mean = 0, meanInv = 0, mp = 0, mpv = -1;
+    for (let i=1;i<=NR;i++){
+      const r = i*dr;
+      mean += 0.25*(p[i]*r + p[i-1]*(r-dr))*dr*2;
+      const rm = r-dr/2;
+      if (rm>1e-9) meanInv += 0.5*(p[i]+p[i-1])*dr/rm;
+      if (p[i]>mpv){ mpv = p[i]; mp = r; }
+    }
+    mean /= norm; meanInv /= norm;
+    // 分位半径
+    function quant(q){
+      let lo=0, hi=NR;
+      while (hi-lo>1){ const mid=(lo+hi)>>1; if (c[mid]<q) lo=mid; else hi=mid; }
+      const d = c[hi]-c[lo];
+      return (lo + (d>0 ? (q-c[lo])/d : 0))*dr;
+    }
+    return {dr:dr, R:R, pdf:p, cdf:c, norm:norm, rmax:rmax, NR:NR,
+            mean:mean, meanInv:meanInv, mp:mp, r50:quant(0.5), r90:quant(0.9), r99:quant(0.99)};
+  }
+
+  /* ================= 电子云点采样（|ψ|² 拒绝采样） ================= */
+  function pointCloud(o){
+    const n=o.n, l=o.l, m=o.m, Z=o.Z, N=o.N, rmax=o.rmax, NR=o.NR||6000, seed=o.seed||12345;
+    const st = radialStats(n,l,Z,rmax,NR);
+    const cdf = st.cdf, dr = st.dr, Rg = st.R, NRr = st.NR;
+    const A = angTable(l,m,180,360);
+    const AM = A.max;
+    const Rf = radialFn(n,l,Z), Yf = realYFn(l,m);
+    const NT = A.NT, NP = A.NP;
+    // xorshift32
+    let rs = seed|0; if (rs===0) rs = 1;
+    const rnd = ()=>{ rs^=rs<<13; rs^=rs>>>17; rs^=rs<<5; return (rs>>>0)/4294967296; };
+    const pos = new Float32Array(N*3), sgn = new Int8Array(N);
+    let got = 0, tries = 0;
+    const maxTries = N*400;
+    while (got<N && tries<maxTries){
+      tries++;
+      const u = rnd();
+      // 逆变换采样径向
+      let lo=0, hi=NRr;
+      while (hi-lo>1){ const mid=(lo+hi)>>1; if (cdf[mid]<u) lo=mid; else hi=mid; }
+      const d = cdf[hi]-cdf[lo];
+      const r = (lo + (d>0 ? (u-cdf[lo])/d : 0))*dr;
+      // 角度：均匀采样立体角 + 拒绝
+      const ct = 2*rnd()-1, phi = 2*PI*rnd();
+      const th = Math.acos(ct);
+      const q = angLookup(A, th/PI*NT, phi/(2*PI)*NP);
+      if (q < AM*rnd()) continue;
+      const stt = SQ(Math.max(0,1-ct*ct));
+      pos[got*3]   = r*stt*Math.cos(phi);
+      pos[got*3+1] = r*stt*Math.sin(phi);
+      pos[got*3+2] = r*ct;
+      // 波函数符号 = sign(R)·sign(Y)
+      const rv = Rf(r), yv = Yf(ct,phi);
+      sgn[got] = (rv*yv >= 0) ? 1 : -1;
+      got++;
+    }
+    return {pos: pos, sgn: sgn, count: got, tries: tries, stats: {
+      mean: st.mean, meanInv: st.meanInv, mp: st.mp, r50: st.r50, r90: st.r90, r99: st.r99,
+      norm: st.norm, eff: got/Math.max(1,tries)
+    }};
+  }
+
+  /* ================= |ψ|² 网格（笛卡尔，用于等值面 / 校验） ================= */
+  // rcut：等值面可达的最大半径（超出后 |ψ|² 必小于阈值），可显著减少求值点数
+  function densityGrid(o){
+    const n=o.n, l=o.l, m=o.m, Z=o.Z, N=o.N|0, rm=o.rmax;
+    const rcut = o.rcut > 0 ? o.rcut : 0, rc2 = rcut*rcut;
+    const vals = new Float32Array(N*N*N), sgn = new Int8Array(N*N*N);
+    const step = 2*rm/(N-1), dV = step*step*step;
+    const Rf = radialFn(n,l,Z), Yf = realYFn(l,m);
+    const iso0 = (l===0 && m===0);            // Y00 为常数
+    const y00 = iso0 ? Yf(1) : 0;
+    const needPhi = (m!==0);
+    let sum = 0, mx = 0;
+    for (let k=0;k<N;k++){
+      const z = -rm + k*step;
+      for (let j=0;j<N;j++){
+        const y = -rm + j*step;
+        for (let i=0;i<N;i++){
+          const x = -rm + i*step;
+          const r2 = x*x + y*y + z*z;
+          let v = 0;
+          if (r2 <= 1e-14){
+            // r→0：只有 l=0,m=0 时非零
+            if (iso0) v = Rf(0)*y00;
+          } else if (!rc2 || r2 <= rc2){
+            const r = SQ(r2);
+            const rv = Rf(r);
+            v = iso0 ? rv*y00 : rv*Yf(z/r, needPhi ? Math.atan2(y,x) : 0);
+          }
+          const q = v*v, idx = (k*N+j)*N+i;
+          vals[idx] = q; sgn[idx] = v>=0 ? 1 : -1;
+          sum += q*dV;
+          if (q>mx) mx = q;
+        }
+      }
+    }
+    return {vals: vals, sgn: sgn, N: N, rmax: rm, dV: dV, sum: sum, max: mx, rcut: rcut};
+  }
+
+  /* =====================================================================
+     等值面阈值：|ψ|² = R_nl(r)²·Y_lm(θ,φ)² 关于 r 与角度是可分离的，因此
+       F(th) = ∫_{|ψ|²≥th}|ψ|²dV = ∫ r²R(r)²·A(th/R(r)²) dr
+       A(c)  = ∫_{Y²≥c}Y²dΩ / ∫Y²dΩ
+     在「保留 P 概率」的定义下对 th 二分即可得到精确阈值（与任何三维网格无关）。
+     ===================================================================== */
+  // 径向表：R²(r)、累积径向质量 Φ(r)、各「瓣」（相邻节点之间的单峰区间）
+  // 以及「外侧单调包络」M[i] = max_{j≥i} R²(r_j)
+  function radialTable(n,l,Z,rmax,NR){
+    const Rf = radialFn(n,l,Z), R2 = new Float64Array(NR+1), PHI = new Float64Array(NR+1), M = new Float64Array(NR+1);
+    const dr = rmax/NR, lobes = [];
+    let mx = 0, acc = 0, prevF = 0, prevS = 0, cur = null;
+    for (let i=0;i<=NR;i++){
+      const r = i*dr, v = Rf(r), q = v*v, f = q*r*r;
+      R2[i] = q;
+      if (i) acc += 0.5*(prevF+f)*dr;
+      PHI[i] = acc; prevF = f;
+      if (q > mx) mx = q;
+      const sg = v > 0 ? 1 : (v < 0 ? -1 : 0);
+      if (cur === null || (sg !== 0 && prevS !== 0 && sg !== prevS)){
+        if (cur){ cur.i1 = i; lobes.push(cur); }
+        cur = {i0:i, i1:NR, iMax:i, maxVal:q};
+      }
+      if (q > cur.maxVal){ cur.maxVal = q; cur.iMax = i; }
+      if (sg !== 0) prevS = sg;
+    }
+    if (cur){ cur.i1 = NR; lobes.push(cur); }
+    let env = 0;
+    for (let i=NR;i>=0;i--){ if (R2[i]>env) env = R2[i]; M[i] = env; }
+    return {R2:R2, PHI:PHI, M:M, lobes:lobes, NR:NR, dr:dr, rmax:rmax, maxR2:mx, norm:acc};
+  }
+  // 满足 R²(r) ≥ c 的最大 r（用单调包络，返回上界以保证不低估）
+  function supportRadius(RT, c){
+    if (c <= 0) return RT.rmax;
+    const M = RT.M;
+    if (M[0] < c) return 0;
+    let lo = 0, hi = RT.NR;                       // M 随 i 单调不增
+    while (hi-lo>1){ const mid=(lo+hi)>>1; if (M[mid] >= c) lo = mid; else hi = mid; }
+    return (lo+1)*RT.dr;
+  }
+  // 径向质量 G(c) = ∫_{R²(r) ≥ c} R²r²dr：
+  // 逐瓣用二分求出 R²=c 的两个交点（不做网格台阶近似），再取累积质量的差
+  function radialMassAbove(RT, c){
+    if (c <= 0) return RT.norm;
+    if (c > RT.maxR2) return 0;
+    const R2 = RT.R2, PHI = RT.PHI, dr = RT.dr, NR = RT.NR, lobes = RT.lobes;
+    const phiAt = (x)=>{
+      if (x <= 0) return 0;
+      if (x >= NR) return PHI[NR];
+      const i = Math.floor(x), t = x - i;
+      return PHI[i] + (PHI[i+1] - PHI[i])*t;
+    };
+    let s = 0;
+    for (let li=0; li<lobes.length; li++){
+      const L = lobes[li];
+      if (L.maxVal < c) continue;
+      let iL, iR;
+      if (R2[L.i0] >= c) iL = L.i0;
+      else {
+        let a = L.i0, b = L.iMax;                 // 不变式：R2[a] < c ≤ R2[b]
+        while (b-a > 1){ const mid = (a+b)>>1; if (R2[mid] >= c) b = mid; else a = mid; }
+        iL = a + (c - R2[a])/((R2[b] - R2[a]) || 1e-300);
+      }
+      if (R2[L.i1] >= c) iR = L.i1;
+      else {
+        let p = L.iMax, q = L.i1;
+        while (q-p > 1){ const mid = (p+q)>>1; if (R2[mid] >= c) p = mid; else q = mid; }
+        iR = p + (c - R2[p])/((R2[q] - R2[p]) || 1e-300);
+      }
+      s += phiAt(iR) - phiAt(iL);
+    }
+    return s;
+  }
+  // 角向质量表：按 Y² 降序的累积质量（用于分位数求积）
+  function angularMassTable(l,m,NT,NP){
+    const M = NT*NP, y2 = new Float64Array(M), w = new Float64Array(M);
+    const dth = PI/NT, dph = 2*PI/NP;
+    let tot = 0, mx = 0;
+    for (let i=0;i<NT;i++){
+      const ct = Math.cos((i+0.5)*dth), dO = Math.sin((i+0.5)*dth)*dth*dph;
+      for (let j=0;j<NP;j++){
+        const v = realY(l,m,ct,(j+0.5)*dph), q = v*v, k = i*NP+j, ww = q*dO;
+        y2[k] = q; w[k] = ww; tot += ww;
+        if (q>mx) mx = q;
+      }
+    }
+    const idx = new Array(M);
+    for (let i=0;i<M;i++) idx[i] = i;
+    idx.sort((a,b)=> y2[b]-y2[a]);                 // 降序
+    const sv = new Float64Array(M), sc = new Float64Array(M);
+    let acc = 0;
+    for (let i=0;i<M;i++){ const k = idx[i]; acc += w[k]; sv[i] = y2[k]; sc[i] = acc; }
+    return {v:sv, c:sc, tot:tot, max:mx, M:M};
+  }
+  // 把角向分布压缩成 Nq 个「等质量」分量（取每个分位区间的代表值）：
+  // 于是 F(th) = (1/Nq)·Σ G(th/|Y|²_q)，角向只用中点法则，径向完全精确
+  function angularQuantiles(AM, Nq){
+    const vq = new Float64Array(Nq);
+    let k = 0;
+    for (let b=0;b<Nq;b++){
+      const p = (b + 0.5)/Nq*AM.tot;
+      while (k < AM.M-1 && AM.c[k] < p) k++;
+      vq[b] = AM.v[k];
+    }
+    return {v:vq, n:Nq};
+  }
+  // 阈值 th 所包含的概率质量
+  function enclosedMass(th, RT, AQ){
+    const v = AQ.v;
+    let s = 0;
+    for (let b=0;b<AQ.n;b++) s += radialMassAbove(RT, th/v[b]);
+    return s/AQ.n;
+  }
+  // 复用的中间量（同一轨道反复拖动阈值时避免重算）
+  const MEMO = new Map();
+  function memo(key, make){
+    let v = MEMO.get(key);
+    if (v === undefined){ v = make(); if (MEMO.size > 16) MEMO.clear(); MEMO.set(key, v); }
+    return v;
+  }
+  /* 求「包含 frac 概率」的阈值，以及等值面所在区域的外接立方体半宽 box */
+  function isoLevel(o){
+    const n=o.n, l=o.l, m=o.m, Z=o.Z;
+    const frac = Math.max(1e-4, Math.min(0.9999, o.frac));
+    const rmaxRad = o.rmaxRad;
+    const AM = memo('AM|'+l+'|'+m, ()=>angularMassTable(l,m,160,320));
+    const AQ = memo('AQ|'+l+'|'+m, ()=>angularQuantiles(AM, 512));
+    const NR = Math.max(8000, Math.min(30000, Math.ceil(rmaxRad*100/3000)*3000));
+    const RT = memo('RT|'+[n,l,Z,rmaxRad.toFixed(3),NR].join('|'), ()=>radialTable(n,l,Z,rmaxRad,NR));
+    const target = frac*RT.norm;
+    let lo = 0, hi = RT.maxR2*AM.max;              // F 关于 th 单调不增
+    for (let it=0; it<64; it++){
+      const mid = 0.5*(lo+hi);
+      if (enclosedMass(mid, RT, AQ) > target) lo = mid; else hi = mid;
+    }
+    const th = 0.5*(lo+hi);
+    const enclosed = enclosedMass(th, RT, AQ)/RT.norm;
+    // 外接立方体：每个方向上的径向支撑半径 → 该方向上 |坐标| 的最大值
+    const NT = 192, NP = 384;
+    let box = 0, rsup = 0;
+    for (let i=0;i<NT;i++){
+      const ct = Math.cos(PI*(i+0.5)/NT), st = Math.sin(PI*(i+0.5)/NT);
+      for (let j=0;j<NP;j++){
+        const phi = 2*PI*(j+0.5)/NP;
+        const v = realY(l,m,ct,phi), q = v*v;
+        if (q <= 0) continue;
+        const rs = supportRadius(RT, th/q);
+        if (rs <= 0) continue;
+        if (rs > rsup) rsup = rs;
+        const ax = rs*st*AB(Math.cos(phi)), ay = rs*st*AB(Math.sin(phi)), az = rs*AB(ct);
+        const mc = ax>ay ? (ax>az?ax:az) : (ay>az?ay:az);
+        if (mc > box) box = mc;
+      }
+    }
+    return {th:th, frac:frac, enclosed:enclosed, box:box, rsup:rsup, rmaxRad:rmaxRad, norm:RT.norm};
+  }
+
+  /* ================= Marching Cubes（表在运行时生成，无需硬编码表） ================= */
+  const MC = (function(){
+    const CUBE_V = [[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
+    const E = [], eid = {}, EAXIS = [];
+    for (let a=0;a<8;a++) for (let b=a+1;b<8;b++){
+      let diff = 0, ax = -1;
+      for (let d=0;d<3;d++) if (CUBE_V[a][d] !== CUBE_V[b][d]){ diff++; ax = d; }
+      if (diff === 1){ eid[a+','+b] = E.length; E.push([a,b]); EAXIS.push(ax); }   // 仅 12 条真正的立方体棱
+    }
+    if (E.length !== 12) throw new Error('Marching Cubes 棱表错误: ' + E.length);
+    // 6 个面，顶点顺序均为「外侧看逆时针」；FOUT 与之一一对应
+    const F    = [[0,3,2,1],[4,5,6,7],[0,1,5,4],[3,7,6,2],[0,4,7,3],[1,2,6,5]];
+    const FOUT = [[0,0,-1],[0,0,1],[0,-1,0],[0,1,0],[-1,0,0],[1,0,0]];
+    const ekey = (a,b)=> a<b ? (a+','+b) : (b+','+a);
+    // 自检：面绕序必须与真实外法向一致（否则线段方向与拼接会错）
+    const FN = F.map((f,fi)=>{
+      const A=CUBE_V[f[0]], B=CUBE_V[f[1]], C=CUBE_V[f[2]];
+      const ux=B[0]-A[0], uy=B[1]-A[1], uz=B[2]-A[2];
+      const wx=C[0]-B[0], wy=C[1]-B[1], wz=C[2]-B[2];
+      const nx=uy*wz-uz*wy, ny=uz*wx-ux*wz, nz=ux*wy-uy*wx;
+      const O = FOUT[fi];
+      if (nx*O[0]+ny*O[1]+nz*O[2] <= 0) throw new Error('Marching Cubes 面绕序自检失败: face ' + fi);
+      return true;
+    });
+    const TAB = new Array(256);
+    for (let c=0;c<256;c++){
+      const inside = [];
+      for (let i=0;i<8;i++) inside[i] = (c>>i)&1;
+      const segs = [];
+      for (let fi=0;fi<6;fi++){
+        const f = F[fi];
+        // 该面上的穿越棱，按面内走向的先后顺序
+        const cr = [];
+        for (let q=0;q<4;q++) if (inside[f[q]] !== inside[f[(q+1)%4]]) cr.push(q);
+        if (!cr.length) continue;
+        // 判断该面走向是否为「外侧逆时针」（否则线段方向需取反）
+        const A = CUBE_V[f[0]], B = CUBE_V[f[1]], C = CUBE_V[f[2]];
+        const ux=B[0]-A[0], uy=B[1]-A[1], uz=B[2]-A[2];
+        const wx=C[0]-B[0], wy=C[1]-B[1], wz=C[2]-B[2];
+        const O = FOUT[fi];
+        const outward = ((uy*wz-uz*wy)*O[0] + (uz*wx-ux*wz)*O[1] + (ux*wy-uy*wx)*O[2]) > 0;
+        // 相邻两条穿越棱配对成一条等值线段（4 条穿越时按走向两两配对解歧义）
+        for (let q=0;q+1<cr.length;q+=2){
+          const qa = cr[q], qb = cr[q+1];
+          const ea = eid[ekey(f[qa], f[(qa+1)%4])];
+          const eb = eid[ekey(f[qb], f[(qb+1)%4])];
+          const seg = inside[f[qa]] ? [ea, eb] : [eb, ea];   // 由「内→外」的穿越点出发
+          segs.push(outward ? seg : [seg[1], seg[0]]);
+        }
+      }
+      if (!segs.length){ TAB[c] = null; continue; }
+      // 每条被穿的棱恰好有 1 条线段终止、1 条线段起始 → 用「终止边 → 起始边」配对成闭合环
+      const byStart = {};
+      for (let i=0;i<segs.length;i++) byStart[segs[i][0]] = i;
+      const used = new Array(segs.length).fill(false);
+      const tris = [];
+      for (let i=0;i<segs.length;i++){
+        if (used[i]) continue;
+        const loop = [segs[i][0]];
+        let cur = i, guard = 0;
+        while (guard++ <= segs.length + 1){
+          used[cur] = true;
+          const e1 = segs[cur][1];
+          loop.push(e1);
+          const nx = byStart[e1];
+          if (nx === undefined || nx === i || used[nx]) break;
+          cur = nx;
+        }
+        if (loop.length >= 4 && loop[0] === loop[loop.length-1]){
+          loop.pop();
+          for (let q=1;q+1<loop.length;q++) tris.push(loop[0], loop[q], loop[q+1]);
+        }
+      }
+      TAB[c] = tris.length ? tris : null;
+    }
+    return {TAB: TAB, E: E, V: CUBE_V, AXIS: EAXIS};
+  })();
+
+  function isosurface(grid, th){
+    const N = grid.N, v = grid.vals, sgn = grid.sgn;
+    const step = 2*grid.rmax/(N-1), ox = -grid.rmax;
+    const TAB = MC.TAB, E = MC.E, CV = MC.V, EAX = MC.AXIS;
+    const vx = [], vi = [], vc = [];
+    const vmap = new Map();   // 按「几何棱」共享顶点，保证多单元拼接无缝
+    const gv = (i,j,k)=> v[(k*N+j)*N+i];
+    let cells = 0, verts = 0;
+    for (let k=0;k<N-1;k++) for (let j=0;j<N-1;j++) for (let i=0;i<N-1;i++){
+      let c = 0;
+      if (gv(i,j,k)   >= th) c |= 1;
+      if (gv(i+1,j,k) >= th) c |= 2;
+      if (gv(i+1,j+1,k)>=th) c |= 4;
+      if (gv(i,j+1,k) >= th) c |= 8;
+      if (gv(i,j,k+1) >= th) c |= 16;
+      if (gv(i+1,j,k+1)>=th)c |= 32;
+      if (gv(i+1,j+1,k+1)>=th)c |= 64;
+      if (gv(i,j+1,k+1)>=th)c |= 128;
+      const tris = TAB[c];
+      if (!tris || !tris.length) continue;
+      cells++;
+      const local = new Int32Array(12).fill(-1);
+      const vids = new Int32Array(tris.length);
+      for (let t=0;t<tris.length;t++){
+        const e = tris[t];
+        let id = local[e];
+        if (id < 0){
+          const a = E[e][0], b = E[e][1], ax = EAX[e];
+          const ca = CV[a];
+          // 该棱自身低端格点 (gi,gj,gk) —— 同轴向的不同棱必须区分
+          const gi = i + (ax===0 ? 0 : ca[0]);
+          const gj = j + (ax===1 ? 0 : ca[1]);
+          const gk = k + (ax===2 ? 0 : ca[2]);
+          const key = ((gk*N + gj)*N + gi)*3 + ax;
+          id = vmap.get(key);
+          if (id === undefined){
+            const A = [i + CV[a][0], j + CV[a][1], k + CV[a][2]];
+            const B = [i + CV[b][0], j + CV[b][1], k + CV[b][2]];
+            const va = gv(A[0],A[1],A[2]), vb = gv(B[0],B[1],B[2]);
+            let tt = (th-va)/((vb-va)||1e-30);
+            if (tt<0) tt = 0; else if (tt>1) tt = 1;
+            const px = ox + (A[0]+tt*(B[0]-A[0]))*step;
+            const py = ox + (A[1]+tt*(B[1]-A[1]))*step;
+            const pz = ox + (A[2]+tt*(B[2]-A[2]))*step;
+            const sA = sgn[(A[2]*N+A[1])*N+A[0]], sB = sgn[(B[2]*N+B[1])*N+B[0]];
+            const sv = (tt<0.5 ? sA : sB) >= 0 ? 1 : -1;
+            id = vx.length/3;
+            vx.push(px,py,pz); vc.push(sv);
+            vmap.set(key, id); verts++;
+          }
+          local[e] = id;
+        }
+        vids[t] = id;
+      }
+      for (let t=0;t<tris.length;t+=3) vi.push(vids[t], vids[t+1], vids[t+2]);
+    }
+    // 法线
+    const P = new Float32Array(vx), C = new Float32Array(vc), I = new Uint32Array(vi);
+    const NRM = new Float32Array(P.length);
+    for (let t=0;t<I.length;t+=3){
+      const a=I[t]*3, b=I[t+1]*3, c=I[t+2]*3;
+      const ux=P[b]-P[a], uy=P[b+1]-P[a+1], uz=P[b+2]-P[a+2];
+      const wx=P[c]-P[a], wy=P[c+1]-P[a+1], wz=P[c+2]-P[a+2];
+      const nx=uy*wz-uz*wy, ny=uz*wx-ux*wz, nz=ux*wy-uy*wx;
+      NRM[a]+=nx; NRM[a+1]+=ny; NRM[a+2]+=nz;
+      NRM[b]+=nx; NRM[b+1]+=ny; NRM[b+2]+=nz;
+      NRM[c]+=nx; NRM[c+1]+=ny; NRM[c+2]+=nz;
+    }
+    for (let i=0;i<NRM.length;i+=3){
+      const d = SQ(NRM[i]*NRM[i]+NRM[i+1]*NRM[i+1]+NRM[i+2]*NRM[i+2])||1;
+      NRM[i]/=d; NRM[i+1]/=d; NRM[i+2]/=d;
+    }
+    // 体积符号（保证外向三角形绕序）
+    let vol = 0;
+    for (let t=0;t<I.length;t+=3){
+      const a=I[t]*3,b=I[t+1]*3,c=I[t+2]*3;
+      vol += (P[a]*(P[b+1]*P[c+2]-P[b+2]*P[c+1]) - P[a+1]*(P[b]*P[c+2]-P[b+2]*P[c]) + P[a+2]*(P[b]*P[c+1]-P[b+1]*P[c]))/6;
+    }
+    if (vol < 0){
+      for (let t=0;t<I.length;t+=3){ const tmp=I[t+1]; I[t+1]=I[t+2]; I[t+2]=tmp; }
+      for (let i=0;i<NRM.length;i++) NRM[i] = -NRM[i];
+    }
+    return {pos:P, nrm:NRM, col:C, idx:I, cells:cells, verts:verts, tris:I.length/3, volume:AB(vol)};
+  }
+
+  /* ================= 节面线（角度节锥/节平面 与 径向节球） ================= */
+  function nodeLines(o){
+    const n=o.n, l=o.l, m=o.m, Z=o.Z, rMax=o.rmax;
+    const segs = [];
+    // --- 角度节面：在球面上做 marching squares（θ×φ 网格上 Y 变号处）
+    const NT=180, NP=360, n1=NP+1;
+    const V = new Float32Array((NT+1)*n1);
+    for (let i=0;i<=NT;i++){
+      const ct = Math.cos(PI*i/NT);
+      for (let j=0;j<n1;j++) V[i*n1+j] = realY(l,m,ct,2*PI*j/NP);
+    }
+    const pt = (i,j)=>[V[i*n1+j], V[i*n1+((j+1)%n1)], V[(i+1)*n1+((j+1)%n1)], V[(i+1)*n1+j]];
+    const P3 = (iF,jF,r)=>{
+      const th = PI*iF/NT, phi = 2*PI*jF/NP, ct=Math.cos(th), stt=Math.sin(th);
+      return [r*stt*Math.cos(phi), r*stt*Math.sin(phi), r*ct];
+    };
+    const lerp = (v1,v2)=> v1/(v1-v2);
+    const SHELLS = [0.45, 0.72, 1.0];
+    for (let i=0;i<NT;i++) for (let j=0;j<NP;j++){
+      const [a,b,c,d] = pt(i,j);
+      const s = [a>0,b>0,c>0,d>0];
+      if (s[0]===s[1] && s[1]===s[2] && s[2]===s[3]) continue;
+      const cr = [];
+      if (s[0]!==s[1]) cr.push(['h', i, j + lerp(a,b)]);
+      if (s[1]!==s[2]) cr.push(['v', i + lerp(b,c), j+1]);
+      if (s[2]!==s[3]) cr.push(['h', i+1, j + lerp(d,c)]);
+      if (s[3]!==s[0]) cr.push(['v', i + lerp(a,d), j]);
+      if (cr.length<2) continue;
+      for (let q=0;q+1<cr.length;q+=2){
+        // 同一条节线画在三层同心球面上，更容易看出这是穿过原点的节面（平面/圆锥）
+        for (const f of SHELLS){
+          const p1 = P3(cr[q][1], cr[q][2], rMax*f), p2 = P3(cr[q+1][1], cr[q+1][2], rMax*f);
+          segs.push(p1[0],p1[1],p1[2], p2[0],p2[1],p2[2]);
+        }
+      }
+    }
+    // --- 径向节球：R_nl(r)=0 处画经纬线球
+    const NR = 4000, rl = rMax*1.05, dr = rl/NR, Rf = radialFn(n,l,Z);
+    let prev = Rf(dr);
+    const rads = [];
+    for (let i=2;i<=NR;i++){
+      const cur = Rf(i*dr);
+      if (cur === 0){ rads.push(i*dr); prev = 0; continue; }      // 恰好落在格点上：记一次，且不与下一点重复计数
+      if (prev !== 0 && (prev<0)!==(cur<0)){
+        // 线性插值初值 + 割线法细化
+        let a = (i-1)*dr, b = i*dr, fa = prev, fb = cur;
+        for (let it=0; it<30 && b-a>1e-13; it++){
+          const x = a - fa*(b-a)/(fb-fa), fx = Rf(x);
+          if (fx === 0){ a = b = x; break; }
+          if ((fx<0)===(fa<0)){ a = x; fa = fx; } else { b = x; fb = fx; }
+        }
+        rads.push(0.5*(a+b));
+      }
+      prev = cur;
+    }
+    for (const rr of rads){
+      const NP2=96;
+      for (let a=0;a<3;a++){
+        // 3 条正交大圆
+        for (let j=0;j<NP2;j++){
+          const p1 = 2*PI*j/NP2, p2 = 2*PI*(j+1)/NP2;
+          let A,B;
+          if (a===0){ A=[rr*Math.cos(p1),rr*Math.sin(p1),0]; B=[rr*Math.cos(p2),rr*Math.sin(p2),0]; }
+          else if (a===1){ A=[rr*Math.cos(p1),0,rr*Math.sin(p1)]; B=[rr*Math.cos(p2),0,rr*Math.sin(p2)]; }
+          else { A=[0,rr*Math.cos(p1),rr*Math.sin(p1)]; B=[0,rr*Math.cos(p2),rr*Math.sin(p2)]; }
+          segs.push(A[0],A[1],A[2],B[0],B[1],B[2]);
+        }
+      }
+      for (let b=1;b<5;b++){
+        const th = PI*b/5, ct=Math.cos(th), stt=Math.sin(th);
+        for (let j=0;j<NP2;j++){
+          const p1=2*PI*j/NP2, p2=2*PI*(j+1)/NP2;
+          segs.push(rr*stt*Math.cos(p1), rr*stt*Math.sin(p1), rr*ct, rr*stt*Math.cos(p2), rr*stt*Math.sin(p2), rr*ct);
+        }
+      }
+    }
+    return {lines: new Float32Array(segs), radialNodes: rads, angNodes: l};
+  }
+
+  /* ================= 正相位区域所占的 |ψ|² 概率份额 ================= */
+  function phaseFraction(l,m){
+    const NT = 600, NP = 1200;
+    let pos = 0, tot = 0;
+    for (let i=0;i<NT;i++){
+      const th = PI*(i+0.5)/NT, ct = Math.cos(th), w = Math.sin(th)*PI/NT*(2*PI/NP);
+      for (let j=0;j<NP;j++){
+        const y = realY(l,m,ct,2*PI*(j+0.5)/NP);
+        const q = y*y*w; tot += q;
+        if (y>0) pos += q;
+      }
+    }
+    return pos/tot;
+  }
+
+  /* ================= 数值自检 ================= */
+  function verify(){
+    const out = [];
+    const ok = (name, val, ref, tol)=>{
+      const err = AB(val-ref);
+      out.push({name:name, val:val, ref:ref, err:err, tol:tol, pass: err<=tol});
+    };
+    // 1) 径向归一化 ∫|R|²r²dr = 1（辛普森，r 到 60n²）
+    const cases = [[1,0],[2,0],[2,1],[3,2],[3,1],[4,3],[4,0],[5,4]];
+    for (const [n,l] of cases){
+      const rm = 60*n*n, NR = 200000;
+      if (NR%2) {}
+      const dr = rm/NR;
+      let s = 0;
+      for (let i=0;i<=NR;i++){
+        const r = i*dr, Rv = radialR(n,l,1,r), f = Rv*Rv*r*r;
+        const w = (i===0||i===NR) ? 1 : (i%2 ? 4 : 2);
+        s += w*f;
+      }
+      s *= dr/3;
+      ok(`∫|R_${n}${['s','p','d','f','g'][l]}|²r²dr = 1`, s, 1, 2e-6);
+    }
+    // 2) ⟨r⟩ = (3n² - l(l+1))/2
+    for (const [n,l] of [[1,0],[2,1],[3,2],[4,3],[5,0]]){
+      const rm = 80*n*n, NR = 200000, dr = rm/NR;
+      let num = 0, den = 0;
+      for (let i=0;i<=NR;i++){
+        const r=i*dr, Rv=radialR(n,l,1,r), p=Rv*Rv*r*r;
+        const w=(i===0||i===NR)?1:(i%2?4:2);
+        num += w*p*r; den += w*p;
+      }
+      ok(`⟨r⟩_${n}${['s','p','d','f','g'][l]} = (3n²-l(l+1))/2`, num/den, (3*n*n-l*(l+1))/2, 2e-5*(n*n+1));
+    }
+    // 3) ⟨1/r⟩ = Z/n²
+    for (const [n,l] of [[1,0],[2,0],[3,1],[4,2]]){
+      const rm = 80*n*n, NR = 200000, dr = rm/NR;
+      let num=0, den=0;
+      for (let i=1;i<=NR;i++){
+        const r=i*dr, Rv=radialR(n,l,1,r), p=Rv*Rv*r*r;
+        const w=(i===NR)?1:(i%2?4:2);
+        num += w*p/r; den += w*p;
+      }
+      ok(`⟨1/r⟩_${n}${['s','p','d','f'][l]} = 1/n²`, num/den, 1/(n*n), 1e-5);
+    }
+    // 4) 球谐归一化 ∫|Y|²dΩ = 1
+    for (const [l,m] of [[0,0],[1,0],[1,1],[2,0],[2,-2],[3,3],[3,-1],[4,4]]){
+      const NT=400, NP=800;
+      let s = 0;
+      for (let i=0;i<NT;i++){
+        const th = PI*(i+0.5)/NT, ct=Math.cos(th), w = Math.sin(th)*PI/NT*(2*PI/NP);
+        for (let j=0;j<NP;j++){
+          const v = realY(l,m,ct,2*PI*(j+0.5)/NP);
+          s += v*v*w;
+        }
+      }
+      ok(`∫|Y_${l},${m}|²dΩ = 1`, s, 1, 3e-3);
+    }
+    // 5) 解析对照：Y00, Y10, Y20, Y22
+    ok('Y_00 = 1/√(4π)', realY(0,0,0.3,0.7), 1/SQ(4*PI), 1e-12);
+    ok('Y_10 = √(3/4π)·cosθ', realY(1,0,0.42,0), SQ(3/(4*PI))*0.42, 1e-12);
+    ok('Y_20 = √(5/16π)(3cos²θ-1)', realY(2,0,0.37,0), SQ(5/(16*PI))*(3*0.37*0.37-1), 1e-12);
+    ok('Y_22 = √(15/16π)sin²θcos2φ', realY(2,2,0.6,0.9), SQ(15/(16*PI))*(1-0.36)*Math.cos(1.8), 1e-12);
+    // 6) 径向分布峰值：1s 在 r=1a0，2p 在 r=4a0；R_2s(2a0)=0
+    {
+      const s1 = radialStats(1,0,1,20,20000);
+      ok('1s 最概然半径 = a₀', s1.mp, 1, 2e-3);
+      const p2 = radialStats(2,1,1,40,20000);
+      ok('2p 最概然半径 = 4a₀', p2.mp, 4, 8e-3);
+      ok('2s 径向节面 R(2a₀) = 0', radialR(2,0,1,2), 0, 1e-12);
+      ok('3p 径向节面 R(6a₀) = 0', radialR(3,1,1,6), 0, 1e-11);
+      ok('3s 内节面 R(1.9019a₀) ≈ 0', radialR(3,0,1,1.901924), 0, 1e-5);
+    }
+    // 7) 径向节面个数 = n-l-1
+    for (const nl of [[3,0],[4,0],[4,1],[5,2],[6,0]]){
+      const n = nl[0], l = nl[1], rm = 40*n*n, NR = 120000, dr = rm/NR;
+      let cnt = 0, prev = radialR(n,l,1,dr);
+      for (let i=2;i<=NR;i++){
+        const cur = radialR(n,l,1,i*dr);
+        if ((prev<0)!==(cur<0)) cnt++;
+        prev = cur;
+      }
+      ok('R_' + n + ['s','p','d','f','g'][l] + ' 径向节面数 = n-l-1', cnt, n-l-1, 0);
+    }
+    // 8) 网格归一化（|ψ|²dV 积分 ≈ 1）
+    {
+      const g = densityGrid({n:2,l:1,m:0,Z:1,N:96,rmax:26});
+      ok('网格 ∫|ψ|²dV ≈ 1 (2p)', g.sum, 1, 5e-3);
+      const g2 = densityGrid({n:1,l:0,m:0,Z:1,N:96,rmax:14});
+      ok('网格 ∫|ψ|²dV ≈ 1 (1s)', g2.sum, 1, 5e-3);
+    }
+    // 9) 简并度 2n²
+    {
+      let cnt = 0;
+      for (let n=1;n<=6;n++){ let c=0; for (let l=0;l<n;l++) c += 2*l+1; cnt += 2*c; }
+      ok('总简并度 Σ2n² (n≤6) = 2·Σn²', cnt, 2*(1+4+9+16+25+36), 0);
+    }
+    // 10) 等值面阈值：1s 的等值面是球，半径有解析解 P(r)=1-e^{-2r}(1+2r+2r²)
+    {
+      let a=0, b=30;
+      for (let i=0;i<200;i++){
+        const mid=0.5*(a+b), P = 1-EX(-2*mid)*(1+2*mid+2*mid*mid);
+        if (P<0.9) a=mid; else b=mid;
+      }
+      const lv = isoLevel({n:1,l:0,m:0,Z:1,frac:0.9,rmaxRad:30});
+      ok('1s 90% 等值面半径 = 解析解', lv.box, 0.5*(a+b), 3e-3);
+      ok('1s 90% 实际包含概率 = 0.9', lv.enclosed, 0.9, 5e-4);
+      // 多个轨道：阈值反算的包含概率必须回到设定值
+      const refs = [[2,1,0,0.9],[2,1,1,0.75],[3,2,-1,0.9],[3,0,0,0.5],[4,3,2,0.99],[5,4,-3,0.25]];
+      for (const [n,l,m,f] of refs){
+        const s = isoLevel({n:n,l:l,m:m,Z:1,frac:f,rmaxRad:Math.max(30, 6*n*n*(n+2))});
+        ok(`iso ${n}${['s','p','d','f','g'][l]} m=${m} P=${(f*100).toFixed(0)}% 自洽`, s.enclosed, f, 1e-3);
+      }
+    }
+    // 11) 实球谐相位惯例（化学教材）：p_x 正瓣在 +x、p_y 在 +y、d_xz 在 x,z>0 为正
+    {
+      const ct = 0.3, st = SQ(1-ct*ct), ph = 0.4;
+      ok('Y_1,1 = +√(3/4π)·sinθ·cosφ  (p_x)', realY(1,1,ct,ph), SQ(3/(4*PI))*st*Math.cos(ph), 1e-12);
+      ok('Y_1,−1 = +√(3/4π)·sinθ·sinφ  (p_y)', realY(1,-1,ct,ph), SQ(3/(4*PI))*st*Math.sin(ph), 1e-12);
+      ok('Y_2,1 = +√(15/4π)·sinθcosθ·cosφ  (d_xz)', realY(2,1,ct,ph), SQ(15/(4*PI))*st*ct*Math.cos(ph), 1e-12);
+      ok('Y_3,3 ∝ +sin³θ·cos3φ  (f_x(x²−3y²))', Math.sign(realY(3,3,0,0)), 1, 0);
+    }
+    // 12) 类氢离子标度：⟨r⟩ = (3n²−l(l+1))/(2Z)
+    for (const [n,l,Z] of [[1,0,2],[2,1,3],[3,2,6]]){
+      const rm = 80*n*n/Z, NR = 200000, dr = rm/NR, Rf = radialFn(n,l,Z);
+      let num = 0, den = 0;
+      for (let i=0;i<=NR;i++){
+        const r=i*dr, Rv=Rf(r), p=Rv*Rv*r*r;
+        const w=(i===0||i===NR)?1:(i%2?4:2);
+        num += w*p*r; den += w*p;
+      }
+      ok(`Z=${Z} ⟨r⟩_${n}${['s','p','d','f'][l]} = (3n²−l(l+1))/(2Z)`, num/den, (3*n*n-l*(l+1))/(2*Z), 1e-5*n*n);
+    }
+    // 13) 节球位置与解析解一致：3s 节点 r = (9 ± 3√3)/2
+    {
+      const nl3 = nodeLines({n:3,l:0,m:0,Z:1,rmax:20});
+      ok('3s 节球个数 = 2', nl3.radialNodes.length, 2, 0);
+      ok('3s 内节球 = (9−3√3)/2', nl3.radialNodes[0], (9-3*SQ(3))/2, 1e-9);
+      ok('3s 外节球 = (9+3√3)/2', nl3.radialNodes[1], (9+3*SQ(3))/2, 1e-9);
+    }
+    // 14) 等值面阈值的独立交叉校验：直接在三维笛卡尔网格上积分 {|ψ|² ≥ th} 内的概率
+    for (const [n,l,m,f] of [[2,1,0,0.9],[3,2,1,0.75],[4,1,-1,0.5]]){
+      const lv = isoLevel({n:n,l:l,m:m,Z:1,frac:f,rmaxRad:Math.max(30, 6*n*n*(n+2))});
+      const g = densityGrid({n:n,l:l,m:m,Z:1,N:128,rmax:lv.box*1.04});
+      let s = 0; const v = g.vals;
+      for (let i=0;i<v.length;i++) if (v[i] >= lv.th) s += v[i];
+      ok(`网格独立积分 ${n}${['s','p','d','f','g'][l]} m=${m}：P(|ψ|²≥th) = ${f}`, s*g.dV, f, 5e-3);
+    }
+    // 15) Marching Cubes：曲面封闭（每条边恰被两个三角形共享），1s 球体积与解析一致
+    {
+      const lv = isoLevel({n:1,l:0,m:0,Z:1,frac:0.9,rmaxRad:30});
+      const g = densityGrid({n:1,l:0,m:0,Z:1,N:96,rmax:lv.box*1.08});
+      const sf = isosurface(g, lv.th), I = sf.idx, E = new Map();
+      for (let t=0;t<I.length;t+=3) for (let k=0;k<3;k++){
+        const a = I[t+k], b = I[t+(k+1)%3], key = a<b ? a*4294967296+b : b*4294967296+a;
+        E.set(key, (E.get(key)||0)+1);
+      }
+      let bad = 0; for (const c of E.values()) if (c !== 2) bad++;
+      ok('等值面封闭：非流形 / 边界边数 = 0', bad, 0, 0);
+      const V0 = 4/3*PI*Math.pow(lv.box,3);
+      ok('1s 等值面体积 / (4π r³/3) = 1', sf.volume/V0, 1, 5e-3);
+    }
+    // Odd-sized Cartesian grids include the origin; retain normalized Y_00.
+    for (const Z0 of [1,6]){
+      const g0 = densityGrid({n:1,l:0,m:0,Z:Z0,N:65,rmax:12/Z0});
+      const center = (32*65+32)*65+32;
+      const exact = Z0*Z0*Z0/PI;
+      ok('1s odd grid center / (Z³/π), Z='+Z0, g0.vals[center]/exact, 1, 1e-6);
+    }
+    // 16) 点云抽样统计：样本 ⟨r⟩ 与解析值一致，2p_z 正负相位各占一半
+    {
+      const pc = pointCloud({n:2,l:1,m:0,Z:1,N:200000,rmax:40,NR:6000,seed:7});
+      let sr = 0, sp = 0;
+      for (let i=0;i<pc.count;i++){
+        const x=pc.pos[i*3], y=pc.pos[i*3+1], z=pc.pos[i*3+2];
+        sr += SQ(x*x+y*y+z*z); if (pc.sgn[i] > 0) sp++;
+      }
+      ok('点云样本 ⟨r⟩_2p = 5 a₀（统计）', sr/pc.count, 5, 0.03);
+      ok('点云 2p_z 正相位占比 = 1/2（统计）', sp/pc.count, 0.5, 0.01);
+    }
+    return out;
+  }
+
+  /* ================= 调度 ================= */
+  // 大网格常驻计算端（Worker 或主线程后备），主线程只拿 key，避免每次调阈值都来回拷贝几十 MB
+  const GRIDS = new Map();
+  function gridSummary(g, key){
+    return {key:key, N:g.N, rmax:g.rmax, dV:g.dV, sum:g.sum, max:g.max, rcut:g.rcut};
+  }
+  function dispatch(type, p){
+    switch(type){
+      case 'radial': return radialStats(p.n,p.l,p.Z,p.rmax,p.NR);
+      case 'points': return pointCloud(p);
+      case 'grid': {
+        const g = densityGrid(p);
+        if (!p.key) return g;
+        GRIDS.clear(); GRIDS.set(p.key, g);
+        return gridSummary(g, p.key);
+      }
+      case 'iso': {
+        let g = p.grid;
+        if (!g){
+          g = GRIDS.get(p.key);
+          if (!g) throw new Error('GRID_MISSING');
+        }
+        return isosurface(g, p.th);
+      }
+      case 'isoLevel': return isoLevel(p);
+      case 'nodes':  return nodeLines(p);
+      case 'phaseFrac': return phaseFraction(p.l, p.m);
+      case 'verify': return verify();
+      case 'ping':   return 'pong';
+    }
+    throw new Error('unknown task ' + type);
+  }
+  function collectBuffers(o, acc, seen){
+    acc = acc || [];
+    seen = seen || new Set();
+    if (!o || typeof o !== 'object') return acc;
+    if (o instanceof ArrayBuffer){ if (!seen.has(o)){ seen.add(o); acc.push(o); } return acc; }
+    if (ArrayBuffer.isView(o)){ return collectBuffers(o.buffer, acc, seen); }
+    for (const k in o){
+      const v = o[k];
+      if (v && typeof v === 'object') collectBuffers(v, acc, seen);
+    }
+    return acc;
+  }
+  return {dispatch:dispatch, collectBuffers:collectBuffers};
+}
+/* ==CORE_END== */
+
+/* =====================================================================
+   Worker / 主线程计算后端（file:// 下 Worker 可能被阻止，自动降级）
+   ===================================================================== */
+const Backend = (function(){
+  let worker = null, local = null, seq = 0;
+  const pending = new Map();
+  // ?sync=1 强制在主线程计算（某些环境禁止 Blob Worker，例如部分 file:// 场景）
+  const noWorker = /(^|[?&#])sync=1/.test(location.search + location.hash);
+  try {
+    if (noWorker) throw new Error('已通过 ?sync=1 指定主线程计算');
+    const src = CORE.toString() + '\n' +
+      'var C = CORE();\n' +
+      'self.onmessage = function(e){ var d = e.data;\n' +
+      '  try { var r = C.dispatch(d.type, d.payload);\n' +
+      '    self.postMessage({id:d.id, ok:true, result:r}, C.collectBuffers(r)); }\n' +
+      '  catch(err){ self.postMessage({id:d.id, ok:false, error:(err && err.stack) || String(err)}); }\n' +
+      '};\n';
+    const url = URL.createObjectURL(new Blob([src], {type:'text/javascript'}));
+    worker = new Worker(url);
+    worker.onmessage = (e)=>{
+      const {id, ok, result, error} = e.data;
+      const slot = pending.get(id); if (!slot) return;
+      pending.delete(id);
+      ok ? slot.res(result) : slot.rej(new Error(error));
+    };
+    // Worker 整体失效（脚本被 CSP 拦截、崩溃、内存不足）时，不能让挂起的任务永远等待：
+    // 关掉它，把尚未完成的任务转到主线程重算
+    worker.onerror = (e)=>{
+      console.warn('Worker 失效，降级到主线程计算：', e && e.message);
+      if (e && e.preventDefault) e.preventDefault();
+      try { worker.terminate(); } catch(_){}
+      worker = null;
+      const list = Array.from(pending.values()); pending.clear();
+      for (const slot of list) runLocal(slot.type, slot.payload, slot.res, slot.rej);
+    };
+  } catch(err){
+    console.warn('Web Worker 不可用，降级到主线程计算：', err);
+    worker = null;
+  }
+  function runLocal(type, payload, res, rej){
+    if (!local) local = CORE();
+    setTimeout(()=>{ try { res(local.dispatch(type, payload)); } catch(e){ rej(e); } }, 0);
+  }
+  function run(type, payload){
+    return new Promise((res, rej)=>{
+      const id = ++seq;
+      if (worker){
+        pending.set(id, {res:res, rej:rej, type:type, payload:payload});
+        worker.postMessage({id:id, type:type, payload:payload});
+      } else runLocal(type, payload, res, rej);
+    });
+  }
+  return {run:run, hasWorker: ()=>!!worker};
+})();
+
+/* =====================================================================
+   数学工具
+   ===================================================================== */
+const M4 = {
+  ident(){ return new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]); },
+  persp(fovy, aspect, near, far){
+    const f = 1/Math.tan(fovy/2), nf = 1/(near-far);
+    return new Float32Array([f/aspect,0,0,0, 0,f,0,0, 0,0,(far+near)*nf,-1, 0,0,2*far*near*nf,0]);
+  },
+  lookAt(ex,ey,ez, cx,cy,cz, ux,uy,uz){
+    let fx = cx-ex, fy = cy-ey, fz = cz-ez;
+    let d = Math.hypot(fx,fy,fz)||1; fx/=d; fy/=d; fz/=d;
+    let sx = fy*uz - fz*uy, sy = fz*ux - fx*uz, sz = fx*uy - fy*ux;
+    d = Math.hypot(sx,sy,sz)||1; sx/=d; sy/=d; sz/=d;
+    const vx = sy*fz - sz*fy, vy = sz*fx - sx*fz, vz = sx*fy - sy*fx;
+    return new Float32Array([
+      sx, vx, -fx, 0,
+      sy, vy, -fy, 0,
+      sz, vz, -fz, 0,
+      -(sx*ex+sy*ey+sz*ez), -(vx*ex+vy*ey+vz*ez), (fx*ex+fy*ey+fz*ez), 1
+    ]);
+  },
+  mul(a,b,out){
+    out = out || new Float32Array(16);
+    for (let i=0;i<4;i++){
+      const b0=b[i*4],b1=b[i*4+1],b2=b[i*4+2],b3=b[i*4+3];
+      out[i*4]   = a[0]*b0 + a[4]*b1 + a[8]*b2  + a[12]*b3;
+      out[i*4+1] = a[1]*b0 + a[5]*b1 + a[9]*b2  + a[13]*b3;
+      out[i*4+2] = a[2]*b0 + a[6]*b1 + a[10]*b2 + a[14]*b3;
+      out[i*4+3] = a[3]*b0 + a[7]*b1 + a[11]*b2 + a[15]*b3;
+    }
+    return out;
+  }
+};
+
+/* =====================================================================
+   WebGL 渲染器
+   ===================================================================== */
+const GLR = (function(){
+  const canvas = document.getElementById('glcanvas');
+  const gl = canvas.getContext('webgl', {antialias:false, alpha:false, depth:true, preserveDrawingBuffer:false})
+          || canvas.getContext('experimental-webgl');
+  if (!gl){ document.getElementById('fatalError').hidden=false; throw new Error('WebGL unavailable'); }
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.LEQUAL);
+  // WebGL1 默认只支持 16 位索引；32 位需要扩展
+  const hasUint32Index = !!(gl.getExtension('OES_element_index_uint') || gl.getExtension('WEBGL_draw_elements_uint'));
+  const IDX_TYPE = hasUint32Index ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
+  const MAX_IDX = hasUint32Index ? 4294967295 : 65535;
+
+  function sh(type, src){
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) + '\n' + src);
+    return s;
+  }
+  function prog(vs, fs){
+    const p = gl.createProgram();
+    gl.attachShader(p, sh(gl.VERTEX_SHADER, vs));
+    gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    const o = {p:p, a:{}, u:{}};
+    const na = gl.getProgramParameter(p, gl.ACTIVE_ATTRIBUTES);
+    for (let i=0;i<na;i++){ const n = gl.getActiveAttrib(p,i).name; o.a[n] = gl.getAttribLocation(p,n); }
+    const nu = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for (let i=0;i<nu;i++){ const n = gl.getActiveUniform(p,i).name.replace(/\[0\]$/,''); o.u[n] = gl.getUniformLocation(p,n); }
+    return o;
+  }
+
+  /* ---------------- shaders ---------------- */
+  const P_POINT = prog(
+    'attribute vec3 aPos; attribute float aT; uniform mat4 uVP; uniform float uSize;\n' +
+    'varying float vT;\n' +
+    'void main(){ vec4 c = uVP*vec4(aPos,1.0); gl_Position = c; vT = aT; gl_PointSize = clamp(uSize/max(0.35,c.w), 1.0, 90.0); }',
+    'precision mediump float; uniform float uAlpha; uniform float uPhase;\n' +
+    'uniform vec3 uPositive; uniform vec3 uNegative; uniform vec3 uNeutral; varying float vT;\n' +
+    'void main(){\n' +
+    '  vec2 d = gl_PointCoord - vec2(0.5); float r2 = dot(d,d);\n' +
+    '  if (r2 > 0.25) discard;\n' +
+    '  float g = max(0.0, (exp(-r2*10.0) - 0.082085)/0.917915);\n' +
+    '  vec3 col = mix(uNeutral, vT>=0.0 ? uPositive : uNegative, uPhase);\n' +
+    '  gl_FragColor = vec4(col, clamp(g*g*uAlpha, 0.0, 1.0));\n' +
+    '}');
+
+  const P_MESH = prog(
+    'attribute vec3 aPos; attribute vec3 aNrm; attribute float aSign; uniform mat4 uVP;\n' +
+    'varying vec3 vN; varying vec3 vP; varying float vS;\n' +
+    'void main(){ gl_Position = uVP*vec4(aPos,1.0); vN = aNrm; vP = aPos; vS = aSign; }',
+    'precision mediump float; uniform float uAlpha; uniform float uPhase; uniform vec3 uLight; uniform vec3 uEye;\n' +
+    'uniform vec3 uPositive; uniform vec3 uNegative; uniform vec3 uNeutral;\n' +
+    'varying vec3 vN; varying vec3 vP; varying float vS;\n' +
+    'void main(){\n' +
+    '  vec3 n = normalize(vN);\n' +
+    '  vec3 V = normalize(uEye - vP);\n' +
+    '  vec3 L = normalize(uLight);\n' +
+    '  float dif = max(dot(n, L), 0.0);\n' +
+    '  float spec = pow(max(dot(n, normalize(L+V)), 0.0), 28.0);\n' +
+    '  vec3 cs = vS>=0.0 ? uPositive : uNegative;\n' +
+    '  vec3 c = mix(uNeutral, cs, uPhase);\n' +
+    '  vec3 col = c*(0.54 + 0.43*dif) + vec3(1.0)*spec*0.055;\n' +
+    '  gl_FragColor = vec4(col, uAlpha);\n' +
+    '}');
+
+  const P_LINE = prog(
+    'attribute vec3 aPos; attribute vec3 aCol; uniform mat4 uVP; varying vec3 vC;\n' +
+    'void main(){ gl_Position = uVP*vec4(aPos,1.0); vC = aCol; }',
+    'precision mediump float; uniform float uAlpha; varying vec3 vC;\n' +
+    'void main(){ gl_FragColor = vec4(vC, uAlpha); }');
+
+  const P_QUAD = prog(
+    'attribute vec2 aPos; uniform mat4 uM; varying vec2 vUv;\n' +
+    'void main(){ vUv = aPos*0.5+0.5; gl_Position = uM*vec4(aPos,0.0,1.0); }',
+    'precision mediump float; uniform sampler2D uTex; uniform float uAlpha; varying vec2 vUv;\n' +
+    'void main(){ vec4 c = texture2D(uTex, vUv); gl_FragColor = vec4(c.rgb, c.a*uAlpha); }');
+
+  function palette(pr, neutral){
+    gl.uniform3fv(pr.u.uPositive, rgb(THEME.positive));
+    gl.uniform3fv(pr.u.uNegative, rgb(THEME.negative));
+    gl.uniform3fv(pr.u.uNeutral, rgb(neutral || THEME.neutral));
+  }
+
+  function buf(data, type){
+    const b = gl.createBuffer();
+    gl.bindBuffer(type || gl.ARRAY_BUFFER, b);
+    gl.bufferData(type || gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    return b;
+  }
+  // 切换程序前关闭所有顶点属性数组：否则上一个程序启用的槽位（如网格法线）
+  // 在下一个程序里没有绑定缓冲，会触发 INVALID_OPERATION
+  const MAX_ATTR = gl.getParameter(gl.MAX_VERTEX_ATTRIBS);
+  function use(pr){
+    for (let i=0;i<MAX_ATTR;i++) gl.disableVertexAttribArray(i);
+    gl.useProgram(pr.p);
+  }
+  function draw(pr, obj, mode){
+    if (!obj || !obj.n) return;
+    use(pr);
+    gl.bindBuffer(gl.ARRAY_BUFFER, obj.b);
+    if (pr.a.aPos !== undefined){ gl.enableVertexAttribArray(pr.a.aPos); gl.vertexAttribPointer(pr.a.aPos, obj.sz, gl.FLOAT, false, 0, 0); }
+    if (pr.a.aCol !== undefined && obj.cb){
+      gl.bindBuffer(gl.ARRAY_BUFFER, obj.cb);
+      gl.enableVertexAttribArray(pr.a.aCol);
+      gl.vertexAttribPointer(pr.a.aCol, 3, gl.FLOAT, false, 0, 0);
+    }
+    if (pr.a.aT !== undefined && obj.tb){
+      gl.bindBuffer(gl.ARRAY_BUFFER, obj.tb);
+      gl.enableVertexAttribArray(pr.a.aT);
+      gl.vertexAttribPointer(pr.a.aT, 1, gl.BYTE, false, 0, 0);
+    }
+    if (pr.a.aNrm !== undefined && obj.nb){
+      gl.bindBuffer(gl.ARRAY_BUFFER, obj.nb);
+      gl.enableVertexAttribArray(pr.a.aNrm);
+      gl.vertexAttribPointer(pr.a.aNrm, 3, gl.FLOAT, false, 0, 0);
+    }
+    if (pr.a.aSign !== undefined && obj.sb){
+      gl.bindBuffer(gl.ARRAY_BUFFER, obj.sb);
+      gl.enableVertexAttribArray(pr.a.aSign);
+      gl.vertexAttribPointer(pr.a.aSign, 1, gl.FLOAT, false, 0, 0);
+    }
+    if (obj.ib){ gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj.ib); gl.drawElements(mode||gl.TRIANGLES, obj.n, IDX_TYPE, 0); }
+    else gl.drawArrays(mode||gl.TRIANGLES, 0, obj.n);
+  }
+
+  /* ---------------- framebuffer (超采样) ---------------- */
+  let fb = null, fbTex = null, fbDepth = null, fbW = 0, fbH = 0;
+  const quadBuf = buf(new Float32Array([-1,-1, 1,-1, -1,1, 1,1]));
+  const nucBuf = buf(new Float32Array([0,0,0]));
+  function ensureFB(w,h){
+    if (fb && fbW===w && fbH===h) return;
+    if (fb){ gl.deleteFramebuffer(fb); gl.deleteTexture(fbTex); gl.deleteRenderbuffer(fbDepth); }
+    fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    fbTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, fbTex);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fbTex, 0);
+    fbDepth = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, fbDepth);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, w, h);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, fbDepth);
+    fbW = w; fbH = h;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
+
+  return {
+    gl: gl, canvas: canvas, P:{point:P_POINT, mesh:P_MESH, line:P_LINE, quad:P_QUAD},
+    buf: buf, draw: draw, use: use, palette: palette, ensureFB: ensureFB, quadBuf: quadBuf, nucBuf: nucBuf,
+    hasUint32Index: hasUint32Index, maxIndex: MAX_IDX,
+    get fb(){ return fb; }, get fbTex(){ return fbTex; }, get fbW(){ return fbW; }, get fbH(){ return fbH; }
+  };
+})();
+
+/* =====================================================================
+   应用状态
+   ===================================================================== */
+const App = {
+  n:2, l:1, m:0, Z:1,
+  mode:'points',
+  N:150000,
+  isoFrac:0.90,
+  isoNum:0,
+  isoRes:176,
+  intensity:1, psize:1, quality:1,
+  phase:true, nodes:false, grid:true, spin:false,
+  lang:'zh',
+  extent:16,
+  stats:null,
+  gridData:null,
+  gen:0
+};
+// 当前轨道的唯一标识；所有异步结果写回前都要核对它，丢弃过期结果
+function orbKey(){ return App.n+'|'+App.l+'|'+App.m+'|'+App.Z; }
+// 带加载遮罩的异步步骤：无论成功或抛错都会恢复计数
+async function step(txt, fn){
+  loading(true, txt);
+  try { return await fn(); } finally { loading(false); }
+}
+function delBuffers(o, keys){ if (!o) return; const gl = GLR.gl; for (const k of keys) if (o[k]) gl.deleteBuffer(o[k]); }
+const CACHE = { radial:null, points:null, grid:null };
+
+/* =====================================================================
+   场景对象
+   ===================================================================== */
+const Scene = {
+  points: null, mesh: null, lines: null, nodeLines: null, unit: 1
+};
+const Cam = {
+  az: 0.72, el: 0.34, zoom: 1, autoDist: 30, target:[0,0,0],
+  vAz:0, vEl:0, dragging:false, lastX:0, lastY:0, pinch:0, touched:false
+};
+
+/* =====================================================================
+   单位与格式化
+   ===================================================================== */
+const A0_PM = 52.9177210544;       // 玻尔半径 (pm)
+const HARTREE_EV = 27.211386245988;
+function fmtR(r){ const a = Math.abs(r); return r.toFixed(a>=100 ? 1 : a>=1 ? 2 : a>=0.1 ? 3 : 4); }
+function fmtBohr(r){ return fmtR(r) + ' a₀'; }
+function fmtPm(r){ return (r*A0_PM).toFixed(1) + ' pm'; }
+const ION = ['', 'H', 'He⁺', 'Li²⁺', 'Be³⁺', 'B⁴⁺', 'C⁵⁺'];
+const RY_EV = 13.605693122994;     // 里德伯能量（无限核质量），E_n = −Ry·Z²/n²
+function fmtBoth(r){ return fmtBohr(r) + ' (' + fmtPm(r) + ')'; }
+
+/* =====================================================================
+   i18n
+   ===================================================================== */
+const I18N = {
+  zh:{
+    title:'原子轨道 · 波函数可视化',dark:'暗色',light:'浅色',dark_theme:'暗色主题',light_theme:'浅色主题',
+    focus:'专注视图',exit_focus:'退出专注',v_shot:'导出 PNG',view_title:'轨道视图',current_orbital:'当前轨道',
+    phase_key:'实波函数符号',phase_note:'颜色表示符号，疏密表示概率',phase_iso_note:'曲面颜色表示实波函数的正负',
+    neutral_key:'概率分布',neutral_note:'符号着色已关闭',reset_short:'复位',zoom_out:'缩小',zoom_in:'放大',
+    controls:'控制面板',model_tag:'单电子模型',tab_orbital:'轨道',tab_appearance:'显示',tab_theory:'模型说明',
+    presets:'常用轨道',s_n:'主量子数',s_l:'角量子数',s_m:'实球谐分量',s_Z:'核电荷数',
+    basis_short:'m 为实球谐基底标签；非零分量由 ±|m| 组合。',sampling:'采样设置',isosurface_settings:'等值面设置',
+    d_pts:'采样点数',d_iso:'包络内概率',d_isoNum:'密度阈值 ρ₀',d_isoRes:'网格精度',res_std:'标准',res_high:'高',res_ultra:'精细',
+    k_energy:'能量 Eₙ',k_degen:'壳层简并度',incl_spin:'含自旋 · 2n²',render_settings:'渲染设置',v_int:'点云强度',
+    v_size:'粒子尺寸',v_qual:'渲染倍率',layers:'辅助图层',v_phase:'波函数符号着色',sign_hint:'正负瓣分别标色',
+    v_nodes:'节面 / 节球',nodes_hint:'ψ = 0 的参考线',v_grid:'坐标轴与尺度',grid_hint:'空间方向与长度参照',v_spin:'自动旋转',spin_hint:'仅旋转观察视角',
+    view_presets:'标准视角',oblique:'斜视',reproduce:'保存与复现',v_link:'复制当前视图链接',
+    local_link_note:'本地链接用于在同一路径恢复参数；发布到网站后可分享给他人。',
+    model_scope:'模型与约定',basis_long:'采用实球谐与化学相位约定。m > 0 对应 cos(mφ)，m < 0 对应 sin(|m|φ)；非零分量由复球谐 ±|m| 实组合而成，不是 Lz 本征态。',
+    k_state:'当前基函数',reading_figure:'如何读图',
+    reading_note:'电子云表示概率分布，不是电子的运动轨迹。颜色仅标记实波函数的正负，不代表正负电荷。',
+    probability_note:'径向概率半径以球内积分定义；等值面按密度阈值定义，两者通常不是同一个边界。视图自动适配范围，实际尺寸以标尺为准。',
+    s_math:'数值检查',verify_hint:'检查归一化、节点、Z 标度、采样统计与等值面。结果采用预设容差。',v_verify:'运行数值自检',
+    references:'参考定义',local_computation:'本地计算',s_data:'径向概率分布',lg_rdf:'径向概率密度',lg_mp:'最概然半径',lg_mean:'平均半径',
+    radial_statistics:'径向统计',k_mp:'最概然半径',k_mean:'平均半径 ⟨r⟩',k_r90:'径向 90% 概率半径',k_r99:'径向 99% 概率半径',k_nodes:'径向 / 角向节点数',
+    s_mode:'显示方式',m_points:'概率点云',m_iso:'概率等值面',hint:'拖动旋转 · 滚轮缩放 · 双击复位',v_reset:'重置视角',
+    note_points:'点的位置按 |ψ|² 概率密度采样。屏幕上的疏密和亮度还受投影、粒子尺寸与叠加影响，不能直接读取为概率数值。',
+    note_iso:'先数值求解密度阈值 ρ₀，使 ∫_{|ψ|²≥ρ₀}|ψ|² dV 达到设定概率，再在紧包围盒的均匀三维网格上提取等值面。网格和三角化均引入数值误差。',
+    density_note_points:'增加点数可减小采样噪声。点的位置代表概率样本。',
+    density_note_iso:'P = ∫_{|ψ|² ≥ ρ₀} |ψ|² dV。设定包络内概率，数值求解对应密度阈值。',
+    loading:'正在计算波函数…',grid_busy:n=>'正在计算 '+n+'³ 网格…',iso_busy:'正在提取等值面…',nodes_busy:'正在计算节点…',
+    gl_lost:'WebGL 上下文丢失，正在等待恢复…',theory:'理论',ref:'参考',initFail:'初始化失败：',shotFail:'导出失败：',
+    linkCopied:'已复制当前视图链接',linkLocalCopied:'已复制本地视图链接（仅适用于相同文件路径）',linkUpdated:'视图参数已写入地址栏',
+    mathNote:'氢原子与类氢单电子离子的定态模型。采用非相对论库仑势、无限核质量近似；不含精细结构和外场效应。径向函数由广义拉盖尔多项式给出，角向函数取归一化实球谐。长度以玻尔半径 a₀ 表示。',
+    f_nodes:(a,b,c)=>'径向节点 '+a+' · 角向节点 '+b+' · 合计 '+c,
+    formula_units:'r 以 a₀ 为单位；Yᴿ 表示实球谐。',
+    webgl_title:'无法启动三维视图',webgl_help:'此浏览器未能创建 WebGL 上下文。请在浏览器中开启硬件加速后重新打开，或使用支持 WebGL 的浏览器。',
+    link_dialog_title:'复制视图链接',link_dialog_help:'浏览器未授予剪贴板权限。请选中并复制以下链接。',close:'关闭',
+    a_header:'界面与导出',a_theme:'主题',a_stage:'三维轨道视图',a_canvas:'三维轨道。拖动旋转、滚轮缩放；方向键旋转，加减键缩放，Home 复位。',
+    a_camera:'视角控制',a_panel:'控制与模型说明',a_tabs:'控制分组',a_analysis:'径向概率分析',a_plot:'径向概率密度曲线，数据摘要见旁边的径向统计',a_view_link:'当前视图链接',
+    state_wait:'等待计算',num_samples:'个样本',num_triangles:'个三角面',integral_estimate:'积分估计',
+    test_running:'正在运行自检…',test_passed:'通过',export_ready:'图像已导出',no_export:'当前轨道正在计算，请完成后再导出。',
+    plot_alt:(n,l,mp,mean,r90,r99)=>'n='+n+'，l='+l+' 的径向概率密度。最概然半径 '+mp+' a₀，平均半径 '+mean+' a₀，90% 球内概率半径 '+r90+' a₀，99% 球内概率半径 '+r99+' a₀。'
+  },
+  en:{
+    title:'Atomic Orbitals · Wave Functions',dark:'Dark',light:'Light',dark_theme:'Dark theme',light_theme:'Light theme',
+    focus:'Focus',exit_focus:'Exit focus',v_shot:'Export PNG',view_title:'Orbital view',current_orbital:'CURRENT ORBITAL',
+    phase_key:'REAL WAVE-FUNCTION SIGN',phase_note:'Color: sign · Point density: probability',phase_iso_note:'Surface color indicates the sign of ψ',
+    neutral_key:'PROBABILITY DISTRIBUTION',neutral_note:'Sign coloring is off',reset_short:'Reset',zoom_out:'Zoom out',zoom_in:'Zoom in',
+    controls:'Controls',model_tag:'One-electron model',tab_orbital:'Orbital',tab_appearance:'Display',tab_theory:'Model',
+    presets:'Common orbitals',s_n:'Principal quantum number',s_l:'Angular quantum number',s_m:'Real harmonic component',s_Z:'Nuclear charge number',
+    basis_short:'m labels a real basis; nonzero components combine ±|m|.',sampling:'Sampling',isosurface_settings:'Isosurface settings',
+    d_pts:'Sample count',d_iso:'Enclosed probability',d_isoNum:'Density threshold ρ₀',d_isoRes:'Grid resolution',res_std:'Standard',res_high:'High',res_ultra:'Fine',
+    k_energy:'Energy Eₙ',k_degen:'Shell degeneracy',incl_spin:'With spin · 2n²',render_settings:'Rendering',v_int:'Point intensity',
+    v_size:'Point size',v_qual:'Render scale',layers:'Reference layers',v_phase:'Wave-function sign',sign_hint:'Separate colors for positive and negative lobes',
+    v_nodes:'Nodal surfaces',nodes_hint:'Reference lines where ψ = 0',v_grid:'Axes and scale',grid_hint:'Orientation and physical length',v_spin:'Auto-rotate',spin_hint:'Rotates the camera only',
+    view_presets:'Camera views',oblique:'Oblique',reproduce:'Save and reproduce',v_link:'Copy current view link',
+    local_link_note:'A local link restores parameters at the same file path. Hosted links can be shared with others.',
+    model_scope:'Model and conventions',basis_long:'Real spherical harmonics use the chemistry phase convention. m > 0 selects cos(mφ), m < 0 selects sin(|m|φ). Nonzero components are real combinations of complex ±|m| harmonics, not Lz eigenstates.',
+    k_state:'Current basis function',reading_figure:'Reading the figure',
+    reading_note:'The cloud represents a probability distribution, not an electron trajectory. Colors indicate the sign of the real wave function, not electric charge.',
+    probability_note:'Radial probability radii use spherical integrals. Isosurfaces use a density threshold, so these are generally different boundaries. The view fits the orbital; read physical sizes from the scale bar.',
+    s_math:'Numerical checks',verify_hint:'Check normalization, nodes, Z scaling, sampling and isosurfaces against preset tolerances.',v_verify:'Run numerical self-test',
+    references:'Reference definitions',local_computation:'Local computation',s_data:'Radial probability',lg_rdf:'Radial density',lg_mp:'Most probable',lg_mean:'Mean radius',
+    radial_statistics:'Radial statistics',k_mp:'Most probable radius',k_mean:'Mean radius ⟨r⟩',k_r90:'Radial 90% probability radius',k_r99:'Radial 99% probability radius',k_nodes:'Radial / angular nodes',
+    s_mode:'Display mode',m_points:'Point cloud',m_iso:'Isosurface',hint:'Drag to rotate · Scroll to zoom · Double-click to reset',v_reset:'Reset view',
+    note_points:'Point positions are sampled from |ψ|². Screen density and brightness also depend on projection, point size and blending; pixels are not quantitative probability readings.',
+    note_iso:'The density threshold ρ₀ is solved numerically so that ∫_{|ψ|²≥ρ₀}|ψ|² dV reaches the selected probability. A surface is then extracted on a uniform 3D grid in a tight bounding box. Grid sampling and triangulation introduce numerical error.',
+    density_note_points:'More points reduce sampling noise. Each position is a probability sample.',
+    density_note_iso:'P = ∫_{|ψ|² ≥ ρ₀} |ψ|² dV. Select an enclosed probability; the density threshold is solved numerically.',
+    loading:'Computing wave function…',grid_busy:n=>'Computing '+n+'³ grid…',iso_busy:'Extracting isosurface…',nodes_busy:'Computing nodes…',
+    gl_lost:'WebGL context lost. Waiting for restoration…',theory:'theory',ref:'reference',initFail:'Initialization failed: ',shotFail:'Export failed: ',
+    linkCopied:'Current view link copied',linkLocalCopied:'Local view link copied (requires the same file path)',linkUpdated:'View parameters written to the address bar',
+    mathNote:'Stationary states of hydrogen and hydrogen-like one-electron ions. The model uses a nonrelativistic Coulomb potential and infinite nuclear mass; fine structure and external fields are excluded. Radial functions use generalized Laguerre polynomials, with normalized real spherical harmonics for the angular part. Lengths are in Bohr radii a₀.',
+    f_nodes:(a,b,c)=>'Radial nodes '+a+' · Angular nodes '+b+' · Total '+c,
+    formula_units:'r is in a₀; Yᴿ denotes a real spherical harmonic.',
+    webgl_title:'3D view could not start',webgl_help:'This browser could not create a WebGL context. Enable hardware acceleration and reopen the file, or use a browser with WebGL support.',
+    link_dialog_title:'Copy view link',link_dialog_help:'Clipboard permission is unavailable. Select and copy the link below.',close:'Close',
+    a_header:'Appearance and export',a_theme:'Theme',a_stage:'Three-dimensional orbital view',a_canvas:'3D orbital. Drag or use arrow keys to rotate; scroll or use plus and minus to zoom; Home resets the view.',
+    a_camera:'Camera controls',a_panel:'Controls and model notes',a_tabs:'Control groups',a_analysis:'Radial probability analysis',a_plot:'Radial probability density curve; numerical summary is in the adjacent radial statistics',a_view_link:'Current view link',
+    state_wait:'Computing',num_samples:'samples',num_triangles:'triangles',integral_estimate:'Integral estimate',
+    test_running:'Running numerical checks…',test_passed:'Passed',export_ready:'Figure exported',no_export:'Please wait for the current orbital to finish computing.',
+    plot_alt:(n,l,mp,mean,r90,r99)=>'Radial probability density for n='+n+', l='+l+'. Most probable radius '+mp+' a₀; mean '+mean+' a₀; spherical 90% radius '+r90+' a₀; spherical 99% radius '+r99+' a₀.'
+  }
+};
+
+function t(k){ return (I18N[App.lang] && I18N[App.lang][k]) || (I18N.zh[k] || k); }
+function toast(msg){
+  let el = document.getElementById('toast');
+  if (!el){ el = document.createElement('div'); el.id = 'toast'; el.setAttribute('role','status'); document.body.appendChild(el); }
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('on'), 2200);
+}
+/* =====================================================================
+   轨道命名
+   ===================================================================== */
+const LNAME = ['s','p','d','f','g','h'];
+const MNAME = {
+  1:{ '0':'p_z', '1':'p_x', '-1':'p_y' },
+  2:{ '0':'d_z²', '1':'d_xz', '-1':'d_yz', '2':'d_x²−y²', '-2':'d_xy' },
+  3:{ '0':'f_z³', '1':'f_xz²', '-1':'f_yz²', '2':'f_z(x²−y²)', '-2':'f_xyz', '3':'f_x(x²−3y²)', '-3':'f_y(3x²−y²)' }
+};
+function orbitalLabel(n,l,m){
+  const base = n + LNAME[l];
+  if (l===0) return base;
+  if (l<=3 && MNAME[l] && MNAME[l][String(m)]) return n + MNAME[l][String(m)];
+  const s = m>0 ? '+' : (m<0 ? '−' : '');
+  return base + ' (m=' + (m===0 ? '0' : s + Math.abs(m)) + ')';
+}
+
+/* =====================================================================
+   UI 构建
+   ===================================================================== */
+// "3d_xz" → "3d<sub>xz</sub>"（标签只来自内部表，无用户输入）
+/* =====================================================================
+   计算流程
+   ===================================================================== */
+let busy = 0;
+function loading(on, txt){
+  busy += on ? 1 : -1; if (busy<0) busy=0;
+  const el = document.getElementById('loading');
+  if (busy>0){ el.classList.add('on'); document.getElementById('loadingTxt').textContent = txt || t('loading'); }
+  else el.classList.remove('on');
+}
+function radialExtent(){
+  // 采样半径：覆盖到 r99.9 之外（长度按 1/Z 缩放）
+  return Math.min(420, Math.max(6, App.n*App.n*(App.n+2)*0.72 + 10)/App.Z);
+}
+
+async function regenerate(rebuild){
+  const gen = ++App.gen;
+  const key = orbKey();
+  const lab = orbitalLabel(App.n, App.l, App.m);
+  const rmax = radialExtent();
+  ['vMP','vMean','vR90','vR99'].forEach(id=>document.getElementById(id).textContent='—');
+  document.getElementById('vNodes').textContent=(App.n-App.l-1)+' / '+App.l;
+  document.getElementById('vIsoNum').textContent='—';
+  App.isoNum=0;
+  updateRenderStatus();
+  try{
+    loading(true, t('loading') + ' ' + lab);
+    // --- 径向统计
+    const st = await Backend.run('radial', {n:App.n, l:App.l, Z:App.Z, rmax:rmax, NR:4000});
+    if (gen !== App.gen) return;                 // 期间又切换了轨道：放弃本轮
+    st.key = key;
+    App.stats = st;
+    App.extent = Math.max(st.r99*1.12, st.mp*1.6, 3/App.Z);
+    updateStatsUI();
+    drawPlot();
+    autoDistance();
+    if (App.mode === 'points') await buildPoints();
+    if (gen !== App.gen) return;
+    if (App.mode === 'iso') await buildIso(false);
+    if (gen !== App.gen) return;
+    if (App.nodes) await buildNodes();
+  } catch(err){
+    console.error(err);
+    showError((err && err.message) || String(err));
+  } finally { loading(false); }
+}
+
+async function buildPoints(){
+  const key = orbKey(), N0 = App.N;
+  const rmax = Math.min(radialExtent(), Math.max(App.stats.r99*1.5, App.stats.mp*3, 8/App.Z));
+  const res = await Backend.run('points', {n:App.n, l:App.l, m:App.m, Z:App.Z, N:N0, rmax:rmax, NR:6000});
+  if (key !== orbKey() || N0 !== App.N) return;   // 过期结果
+  delBuffers(Scene.points, ['b','tb']);
+  Scene.points = { b: GLR.buf(res.pos), tb: GLR.buf(res.sgn), n: res.count, sz: 3, rmax: rmax, key: key };
+  App.eff = res.stats.eff;
+  updateDensityNote();
+}
+function autoDistance(){
+  Cam.autoDist = App.extent * 3.35;
+}
+
+/* =====================================================================
+   等值面：数值阈值与均匀网格
+     1) isoLevel —— 用 |ψ|² = R(r)²·Y(θ,φ)² 的可分离性，通过数值积分和二分求出「包含 P 概率」的
+        阈值，并给出等值面所在区域的外接立方体（由各方向的径向支撑半径确定）。
+        外接盒通常远小于整个采样盒，因此同样的网格点数可换来高得多的空间分辨率。
+     2) 在该外接盒内用高分辨率笛卡尔网格做 marching cubes；盒外（超过径向支撑
+        半径）的点直接置零，省去无用的波函数求值。
+   ===================================================================== */
+function isoRadialRange(){
+  // 径向分析范围：覆盖 r99 之外的尾部，保证归一化与支撑半径可靠
+  return Math.max(App.stats.r99*1.8, 4*App.n*(App.n+6)/App.Z, 8/App.Z);
+}
+async function buildIso(force){
+  const okey = orbKey(), frac = App.isoFrac, N = App.isoRes;
+  const stale = ()=> okey !== orbKey() || frac !== App.isoFrac || N !== App.isoRes || App.mode !== 'iso';
+  const rmaxRad = isoRadialRange();
+  // --- 1) 数值阈值 + 紧包围盒
+  const lv = await Backend.run('isoLevel', {n:App.n, l:App.l, m:App.m, Z:App.Z, frac:frac, rmaxRad:rmaxRad});
+  if (stale()) return;
+  const vox = 2*(lv.box*1.02)/(N-1);
+  const rm = lv.box*1.02 + 2*vox;               // 外接盒 + 约 2 层网格的余量
+  const key = [okey,rm.toFixed(4),N].join('|');
+  const makeGrid = ()=> step(t('grid_busy')(N), async ()=>{
+    // 网格常驻计算端，这里只拿回摘要
+    const g = await Backend.run('grid', {n:App.n,l:App.l,m:App.m,Z:App.Z,N:N,rmax:rm,rcut:lv.rsup*1.02,key:key});
+    App.gridData = g;
+  });
+  if (force || !App.gridData || App.gridData.key !== key) await makeGrid();
+  if (stale()) return;
+  App.isoNum = lv.th;
+  App.isoEnclosed = lv.enclosed;
+  document.getElementById('vIsoNum').textContent = lv.th.toExponential(3);
+  document.getElementById('rowIsoNum').style.display = '';
+  let surf;
+  try {
+    surf = await step(t('iso_busy'), ()=>Backend.run('iso', {key:key, th:lv.th}));
+  } catch(err){
+    if (!/GRID_MISSING/.test(String(err && err.message))) throw err;
+    await makeGrid();                             // 计算端缓存被替换：重建一次
+    if (stale()) return;
+    surf = await step(t('iso_busy'), ()=>Backend.run('iso', {key:key, th:lv.th}));
+  }
+  if (stale()) return;
+  const gl = GLR.gl;
+  delBuffers(Scene.mesh, ['b','nb','sb','ib']); Scene.mesh = null;
+  if (!surf.tris) return;
+  let idx = surf.idx;
+  if (!GLR.hasUint32Index){
+    if (surf.verts > GLR.maxIndex){
+      showError(App.lang==='zh'
+        ? '当前浏览器不支持 32 位索引，等值面顶点数（' + surf.verts + '）超出上限，请降低等值面精度或主量子数 n。'
+        : 'This browser lacks 32-bit indices; isosurface too large (' + surf.verts + ' vertices). Lower the isosurface precision or n.');
+      return;
+    }
+    idx = new Uint16Array(surf.idx);
+  }
+  const sign = new Float32Array(surf.col.length);
+  for (let i=0;i<sign.length;i++) sign[i] = surf.col[i];
+  Scene.mesh = {
+    b: GLR.buf(surf.pos), nb: GLR.buf(surf.nrm), sb: GLR.buf(sign),
+    ib: GLR.buf(idx, gl.ELEMENT_ARRAY_BUFFER), n: idx.length, sz: 3,
+    tris: surf.tris, enclosed: lv.enclosed, volume: surf.volume,
+    gridN: N, voxel: (2*rm)/(N-1), box: rm, key: okey
+  };
+  updateDensityNote();
+}
+
+async function buildNodes(){
+  const key = orbKey(), rm = App.extent;
+  const nl = await step(t('nodes_busy'), ()=>Backend.run('nodes', {n:App.n,l:App.l,m:App.m,Z:App.Z,rmax:rm}));
+  if (key !== orbKey()) return;
+  delBuffers(Scene.nodeLines, ['b','cb']);
+  if (!nl.lines.length){ Scene.nodeLines = {n:0, key:key}; return; }
+  const col = new Float32Array(nl.lines.length);
+  const nodeColor = rgb(THEME.gold);
+  for (let i=0;i<col.length;i+=3) col.set(nodeColor,i);
+  Scene.nodeLines = {b: GLR.buf(nl.lines), cb: GLR.buf(col), n: nl.lines.length/3, sz:3, key:key};
+}
+
+/* =====================================================================
+   数值/统计 UI
+   ===================================================================== */
+/* -------- 径向分布绘图 -------- */
+function drawPlot(){
+  const cv = document.getElementById('plot');
+  const dpr = Math.min(2, window.devicePixelRatio||1);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+  const g = cv.getContext('2d');
+  g.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,w,h);
+  const s = App.stats; if (!s || w<100 || h<90) return;
+  const pad = {l:43, r:14, t:26, b:35};
+  const W = w-pad.l-pad.r, H = h-pad.t-pad.b;
+  const rgba = (hex,a)=>'rgba('+rgb(hex).map(v=>Math.round(v*255)).join(',')+','+a+')';
+  const tick = v=>{
+    if (!v) return '0';
+    if (Math.abs(v)<0.01 || Math.abs(v)>=1000)
+      return v.toExponential(1).replace('e-','e−').replace('e+','e');
+    return String(+v.toPrecision(2));
+  };
+  function ceilingStep(v){
+    const p = Math.pow(10,Math.floor(Math.log10(Math.max(v,1e-12))));
+    const m = v/p;
+    return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p;
+  }
+  let peak = 0;
+  for (let i=0;i<=s.NR;i++) peak = Math.max(peak,s.pdf[i]);
+  const yStep = ceilingStep((peak||1)/3);
+  const ymax = Math.ceil((peak||1)*1.05/yStep)*yStep;
+  const xmax = s.rmax;
+  const X = r=>pad.l+r/xmax*W, Y = v=>pad.t+H-v/ymax*H;
+  const mono = '"SFMono-Regular", Consolas, "Liberation Mono", monospace';
+
+  // Light reference lines and explicit dimensions keep the curve quantitative.
+  g.font = '10px '+mono; g.lineWidth = 1; g.textBaseline = 'middle';
+  for (let v=0;v<=ymax+yStep*0.1;v+=yStep){
+    const y = Y(Math.min(v,ymax));
+    g.strokeStyle = rgba(THEME.line,THEME.isLight?0.22:0.32);
+    g.beginPath(); g.moveTo(pad.l,y+0.5); g.lineTo(pad.l+W,y+0.5); g.stroke();
+    g.textAlign = 'right'; g.fillStyle = THEME.muted;
+    g.fillText(tick(v),pad.l-8,y);
+  }
+  g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  g.fillStyle = THEME.muted; g.font = '10px '+mono;
+  g.fillText('P(r) [a₀⁻¹]',pad.l,13);
+
+  const step = Math.max(1,Math.floor(s.NR/520));
+  function trace(){
+    g.moveTo(X(0),Y(s.pdf[0]));
+    for (let i=step;i<s.NR;i+=step) g.lineTo(X(i*s.dr),Y(s.pdf[i]));
+    g.lineTo(X(s.rmax),Y(s.pdf[s.NR]));
+  }
+  g.save(); g.beginPath(); g.rect(pad.l,pad.t,W,H); g.clip();
+  const grad = g.createLinearGradient(0,pad.t,0,pad.t+H);
+  grad.addColorStop(0,rgba(THEME.plot,THEME.isLight?0.16:0.20));
+  grad.addColorStop(1,rgba(THEME.plot,0.015));
+  g.beginPath(); g.moveTo(X(0),Y(0)); trace(); g.lineTo(X(xmax),Y(0)); g.closePath();
+  g.fillStyle = grad; g.fill();
+  function mark(r,color,dash){
+    if (!isFinite(r) || r<0 || r>xmax) return;
+    const x = X(r); g.strokeStyle = color; g.lineWidth = 1;
+    g.setLineDash(dash); g.beginPath(); g.moveTo(x,pad.t+1); g.lineTo(x,pad.t+H); g.stroke();
+    g.setLineDash([]);
+  }
+  mark(s.mp,THEME.gold,[4,3]);
+  mark(s.mean,THEME.green,[2,3]);
+  g.beginPath(); trace(); g.strokeStyle = THEME.plot; g.lineWidth = 1.8; g.stroke();
+  g.restore();
+
+  g.strokeStyle = rgba(THEME.line,THEME.isLight?0.60:0.72); g.lineWidth = 1;
+  g.beginPath(); g.moveTo(pad.l,pad.t); g.lineTo(pad.l,pad.t+H+0.5); g.lineTo(pad.l+W,pad.t+H+0.5); g.stroke();
+  g.font = '10px '+mono; g.fillStyle = THEME.muted; g.textBaseline = 'alphabetic';
+  const nTicks = w<260?3:4;
+  for (let i=0;i<=nTicks;i++){
+    const r = xmax*i/nTicks, x = X(r);
+    g.beginPath(); g.moveTo(x,pad.t+H); g.lineTo(x,pad.t+H+4); g.stroke();
+    g.textAlign = i===0?'left':i===nTicks?'right':'center';
+    g.fillText(tick(r),x,h-18);
+  }
+  g.textAlign = 'right'; g.fillText('r [a₀]',pad.l+W,h-3);
+  g.textAlign = 'left';
+}
+
+/* =====================================================================
+   渲染循环
+   ===================================================================== */
+const OV = document.getElementById('overlay');
+function resize(){
+  const dpr = Math.min(2, window.devicePixelRatio||1);
+  const stage = document.getElementById('stage');
+  const w=stage.clientWidth, top=w<620?180:56, h=Math.max(150,stage.clientHeight-top-39);
+  const scale = Math.min(2.2, dpr*App.quality);
+  const RW = Math.max(2, Math.round(w*scale)), RH = Math.max(2, Math.round(h*scale));
+  const c = GLR.canvas;
+  if (c.width !== RW || c.height !== RH){ c.width = RW; c.height = RH; }
+  c.style.width=w+'px';c.style.height=h+'px';c.style.top=top+'px';
+  OV.width = Math.round(w*dpr); OV.height = Math.round(h*dpr);
+  OV.style.width=w+'px';OV.style.height=h+'px';OV.style.top=top+'px';
+  GLR.ensureFB(RW, RH);
+}
+window.addEventListener('resize', ()=>{ resize(); drawPlot(); });
+// WebGL 上下文丢失（显存回收、驱动重置）：带着当前状态重新载入
+GLR.canvas.addEventListener('webglcontextlost', e=>{ e.preventDefault(); showError(t('gl_lost')); });
+GLR.canvas.addEventListener('webglcontextrestored', ()=>{ location.replace(location.pathname + '?' + stateQuery()); });
+
+let lastT = performance.now();
+function frame(now){
+  const dt = Math.min(0.05, (now-lastT)/1000); lastT = now;
+  // 惯性
+  if (!Cam.dragging){
+    Cam.az += Cam.vAz*dt; Cam.el += Cam.vEl*dt;
+    Cam.vAz *= Math.pow(0.02, dt); Cam.vEl *= Math.pow(0.02, dt);
+  }
+  if (App.spin && !Cam.dragging) Cam.az += dt*0.13;
+  Cam.el = Math.max(-Math.PI/2+.001, Math.min(Math.PI/2-.001, Cam.el));
+  render();
+  requestAnimationFrame(frame);
+}
+
+function render(){
+  const gl = GLR.gl;
+  const RW = GLR.fbW, RH = GLR.fbH;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, GLR.fb);
+  gl.viewport(0,0,RW,RH);
+  const bg = rgb(THEME.bg);
+  gl.clearColor(bg[0],bg[1],bg[2],1);
+  gl.clearDepth(1);
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthMask(true);
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+
+  const dist = Cam.autoDist*Cam.zoom;
+  const eye = [Cam.target[0] + dist*Math.cos(Cam.el)*Math.sin(Cam.az),
+               Cam.target[1] + dist*Math.cos(Cam.el)*Math.cos(Cam.az),
+               Cam.target[2] + dist*Math.sin(Cam.el)];
+  const near = Math.max(0.01, dist*0.012), far = dist*12 + App.extent*8;
+  const aspect = RW/RH;
+  const proj = M4.persp(45*Math.PI/180, aspect, near, far);
+  const view = M4.lookAt(eye[0],eye[1],eye[2], Cam.target[0],Cam.target[1],Cam.target[2], 0,0,1);
+  const VP = M4.mul(proj, view);
+  const pxPerUnit = (RH*0.5)/Math.tan(22.5*Math.PI/180);
+
+  /* ---- 网格 / 坐标轴 ---- */
+  if (App.grid){
+    drawGrid(VP, pxPerUnit);
+  }
+  /* ---- 点云 / 等值面 / 剖面 / 形状 ---- */
+  if (App.mode==='points' && Scene.points && Scene.points.key===orbKey()){
+    gl.disable(gl.DEPTH_TEST);
+    gl.enable(gl.BLEND);
+    // Standard alpha avoids blown-out cores and preserves hue on both backgrounds.
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    const pr = GLR.P.point;
+    GLR.use(pr);
+    gl.uniformMatrix4fv(pr.u.uVP, false, VP);
+    GLR.palette(pr);
+    gl.uniform1f(pr.u.uAlpha, (THEME.isLight?0.10:0.12)*App.intensity*Math.pow(150000/Math.max(20000,Scene.points.n), 0.34));
+    gl.uniform1f(pr.u.uPhase, App.phase ? 1 : 0);
+    gl.uniform1f(pr.u.uSize, App.extent*0.0125*App.psize*pxPerUnit);
+    gl.bindBuffer(gl.ARRAY_BUFFER, Scene.points.b);
+    gl.enableVertexAttribArray(pr.a.aPos); gl.vertexAttribPointer(pr.a.aPos,3,gl.FLOAT,false,0,0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, Scene.points.tb);
+    gl.enableVertexAttribArray(pr.a.aT); gl.vertexAttribPointer(pr.a.aT,1,gl.BYTE,false,0,0);
+    gl.drawArrays(gl.POINTS, 0, Scene.points.n);
+    gl.disable(gl.BLEND);
+    gl.enable(gl.DEPTH_TEST);
+  } else if (App.mode==='iso' && Scene.mesh && Scene.mesh.key===orbKey()){
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    const pr = GLR.P.mesh;
+    GLR.use(pr);
+    gl.uniformMatrix4fv(pr.u.uVP, false, VP);
+    GLR.palette(pr);
+    gl.uniform1f(pr.u.uAlpha, 0.96);
+    gl.uniform1f(pr.u.uPhase, App.phase ? 1 : 0);
+    gl.uniform3f(pr.u.uEye, eye[0], eye[1], eye[2]);
+    // 头灯略偏上方，避免正对视线时完全平光
+    gl.uniform3f(pr.u.uLight, eye[0], eye[1]+0.001, eye[2] + dist*0.35);
+    gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
+    GLR.draw(pr, Scene.mesh, gl.TRIANGLES);
+    gl.disable(gl.CULL_FACE);
+    gl.disable(gl.BLEND);
+  }
+  /* ---- 节面线 ---- */
+  if (Scene.nodeLines && Scene.nodeLines.n && App.nodes && Scene.nodeLines.key===orbKey()){
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false);
+    const pr = GLR.P.line;
+    GLR.use(pr);
+    gl.uniformMatrix4fv(pr.u.uVP, false, VP);
+    gl.uniform1f(pr.u.uAlpha, THEME.isLight?0.64:0.68);
+    GLR.draw(pr, Scene.nodeLines, gl.LINES);
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
+  }
+  /* ---- 原子核 ---- */
+  {
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false);
+    const pr = GLR.P.point;
+    GLR.use(pr);
+    gl.uniformMatrix4fv(pr.u.uVP, false, VP);
+    GLR.palette(pr, THEME.ink);
+    gl.uniform1f(pr.u.uAlpha, 0.78);
+    gl.uniform1f(pr.u.uPhase, 0);
+    gl.uniform1f(pr.u.uSize, 6*dist);
+    gl.bindBuffer(gl.ARRAY_BUFFER, GLR.nucBuf);
+    gl.enableVertexAttribArray(pr.a.aPos); gl.vertexAttribPointer(pr.a.aPos,3,gl.FLOAT,false,0,0);
+    gl.disableVertexAttribArray(pr.a.aT);
+    gl.vertexAttrib1f(pr.a.aT, 1);
+    gl.drawArrays(gl.POINTS, 0, 1);
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
+  }
+  /* ---- blit ---- */
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0,0,GLR.canvas.width,GLR.canvas.height);
+  gl.disable(gl.DEPTH_TEST);
+  const q = GLR.P.quad;
+  GLR.use(q);
+  gl.uniformMatrix4fv(q.u.uM, false, M4.ident());
+  gl.uniform1f(q.u.uAlpha, 1);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, GLR.fbTex);
+  gl.uniform1i(q.u.uTex, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, GLR.quadBuf);
+  gl.enableVertexAttribArray(q.a.aPos); gl.vertexAttribPointer(q.a.aPos,2,gl.FLOAT,false,0,0);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  gl.enable(gl.DEPTH_TEST);
+  drawOverlay(VP, pxPerUnit, eye);
+}
+
+/* -------- 网格与标尺 -------- */
+let gridCache = {key:null, b:null, cb:null, n:0};
+function drawGrid(VP, pxPerUnit){
+  const gl = GLR.gl;
+  const pr = GLR.P.line;
+  const unit = niceStep(App.extent);
+  const key = App.extent.toFixed(3);
+  if (gridCache.key !== key){
+    const segs = [], cols = [];
+    const nRing = Math.min(6, Math.floor(App.extent/unit));
+    const NM = 96;
+    function ring(r, color){
+      for (let i=0;i<NM;i++){
+        const a1 = 2*Math.PI*i/NM, a2 = 2*Math.PI*(i+1)/NM;
+        segs.push(r*Math.cos(a1),r*Math.sin(a1),0, r*Math.cos(a2),r*Math.sin(a2),0);
+        cols.push(color[0],color[1],color[2], color[0],color[1],color[2]);
+      }
+    }
+    function axis(dir, len, color){
+      segs.push(-dir[0]*len,-dir[1]*len,-dir[2]*len, dir[0]*len,dir[1]*len,dir[2]*len);
+      cols.push(color[0],color[1],color[2], color[0],color[1],color[2]);
+    }
+    for (let i=1;i<=nRing;i++) ring(i*unit, rgb(THEME.line));
+    axis([1,0,0], App.extent*1.2, rgb(THEME.positive));
+    axis([0,1,0], App.extent*1.2, rgb(THEME.green));
+    axis([0,0,1], App.extent*1.2, rgb(THEME.negative));
+    if (gridCache.b) gl.deleteBuffer(gridCache.b);
+    if (gridCache.cb) gl.deleteBuffer(gridCache.cb);
+    gridCache = {key:key, b:GLR.buf(new Float32Array(segs)), cb:GLR.buf(new Float32Array(cols)), n:segs.length/3};
+    Scene.unit = unit;
+  }
+  if (!gridCache.b) return;
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.depthMask(false);
+  GLR.use(pr);
+  gl.uniformMatrix4fv(pr.u.uVP, false, VP);
+  gl.uniform1f(pr.u.uAlpha, THEME.isLight?0.34:0.46);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gridCache.b); gl.enableVertexAttribArray(pr.a.aPos); gl.vertexAttribPointer(pr.a.aPos,3,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gridCache.cb); gl.enableVertexAttribArray(pr.a.aCol); gl.vertexAttribPointer(pr.a.aCol,3,gl.FLOAT,false,0,0);
+  gl.drawArrays(gl.LINES, 0, gridCache.n);
+  gl.depthMask(true);
+  gl.disable(gl.BLEND);
+}
+function niceStep(extent){
+  const raw = extent/3.2;
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const m = raw/p;
+  const s = m<1.5 ? 1 : m<3.5 ? 2 : m<7.5 ? 5 : 10;
+  return s*p;
+}
+
+/* -------- 2D 覆盖层：比例尺与标签 -------- */
+function drawOverlay(VP, pxPerUnit, eye){
+  const ctx = OV.getContext('2d');
+  const dpr = Math.min(2, window.devicePixelRatio||1);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const w = OV.width/dpr, h = OV.height/dpr;
+  ctx.clearRect(0,0,w,h);
+  if (!App.grid || !Scene.unit) return;
+
+  // A camera-aware scale stays legible at every zoom level.
+  const dist = Cam.autoDist*Cam.zoom;
+  const focal = (h*0.5)/Math.tan(22.5*Math.PI/180);
+  const unit = niceStep(dist/focal*Math.min(100,w*0.24)*3.2);
+  const px = focal*unit/dist;
+  const x0 = w-26-px, y0 = h-29;
+  ctx.strokeStyle = THEME.muted; ctx.lineWidth = 1.1;
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0+px,y0);
+  ctx.moveTo(x0,y0-3); ctx.lineTo(x0,y0+3);
+  ctx.moveTo(x0+px,y0-3); ctx.lineTo(x0+px,y0+3); ctx.stroke();
+  ctx.fillStyle = THEME.muted;
+  ctx.font = '10px "SFMono-Regular", Consolas, "Liberation Mono", monospace';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  const label = (+unit.toPrecision(3))+' a₀  ·  '+(+(unit*A0_PM).toPrecision(3))+' pm';
+  ctx.lineWidth = 3; ctx.strokeStyle = THEME.bg; ctx.lineJoin = 'round';
+  ctx.strokeText(label,x0+px,y0-10); ctx.fillText(label,x0+px,y0-10);
+
+  // Labels avoid the DOM title and bottom status bar.
+  const L = App.extent*1.2;
+  const pts = [[[L,0,0],'x',THEME.positive],[[0,L,0],'y',THEME.green],[[0,0,L*.76],'z',THEME.negative]];
+  ctx.font = 'italic 14px Georgia, "Times New Roman", serif';
+  ctx.textAlign = 'left';
+  for (const [p,txt,color] of pts){
+    const c = proj(VP,p,w,h);
+    if (!c || c[0]<16 || c[0]>w-24 || c[1]<20 || c[1]>h-58) continue;
+    ctx.strokeStyle = THEME.bg; ctx.lineWidth = 3; ctx.fillStyle = color;
+    ctx.strokeText(txt,c[0]+5,c[1]-5); ctx.fillText(txt,c[0]+5,c[1]-5);
+  }
+}
+function proj(VP, p, w, h){
+  const x = VP[0]*p[0]+VP[4]*p[1]+VP[8]*p[2]+VP[12];
+  const y = VP[1]*p[0]+VP[5]*p[1]+VP[9]*p[2]+VP[13];
+  const z = VP[2]*p[0]+VP[6]*p[1]+VP[10]*p[2]+VP[14];
+  const wc = VP[3]*p[0]+VP[7]*p[1]+VP[11]*p[2]+VP[15];
+  if (wc <= 0.0001) return null;
+  return [(x/wc*0.5+0.5)*w, (1-(y/wc*0.5+0.5))*h];
+}
+
+/* =====================================================================
+   交互
+   ===================================================================== */
+(function bindInput(){
+  const c = GLR.canvas;
+  c.addEventListener('pointerdown', e=>{
+    Cam.dragging = true; Cam.lastX = e.clientX; Cam.lastY = e.clientY;
+    Cam.vAz = Cam.vEl = 0; c.classList.add('drag'); c.setPointerCapture(e.pointerId);
+  });
+  c.addEventListener('pointermove', e=>{
+    if (!Cam.dragging) return;
+    const dx = e.clientX-Cam.lastX, dy = e.clientY-Cam.lastY;
+    Cam.lastX = e.clientX; Cam.lastY = e.clientY;
+    Cam.az -= dx*0.0072; Cam.el += dy*0.0072;
+    Cam.vAz = -dx*0.0072*8; Cam.vEl = dy*0.0072*8;
+  });
+  const end = e=>{ Cam.dragging = false; c.classList.remove('drag'); };
+  c.addEventListener('pointerup', end);
+  c.addEventListener('pointercancel', end);
+  c.addEventListener('wheel', e=>{
+    e.preventDefault();
+    const f = Math.exp((e.deltaY>0?1:-1)*0.11);
+    Cam.zoom = Math.max(0.06, Math.min(14, Cam.zoom*f));
+  }, {passive:false});
+  c.addEventListener('dblclick', ()=>{ Cam.zoom = 1; Cam.az = 0.72; Cam.el = 0.34; Cam.vAz = Cam.vEl = 0; });
+  // 触屏双指缩放
+  let pinchD = 0;
+  c.addEventListener('touchstart', e=>{
+    if (e.touches.length===2){
+      pinchD = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+      Cam.dragging = false;
+    }
+  }, {passive:true});
+  c.addEventListener('touchmove', e=>{
+    if (e.touches.length===2 && pinchD){
+      const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+      Cam.zoom = Math.max(0.06, Math.min(14, Cam.zoom*(pinchD/Math.max(1,d))));
+      pinchD = d;
+    }
+  }, {passive:true});
+  c.addEventListener('touchend', ()=>{ pinchD = 0; }, {passive:true});
+})();
+
+/* =====================================================================
+   控件绑定
+   ===================================================================== */
+/* =====================================================================
+   URL 参数（可分享的深链）：?n=3&l=2&m=0&mode=iso&N=200000&iso=90&isoN=176&sync=1
+   ===================================================================== */
+function initFromURL(){
+  const q = new URLSearchParams(location.search.replace(/^[?&]/, '').replace(/;/g, '&'));
+  const num = (k, d)=>{ const v = parseFloat(q.get(k)); return isFinite(v) ? v : d; };
+  const bool = (k, d)=>{ const v = q.get(k); return v===null ? d : !(v==='0'||v==='false'); };
+  let n = Math.round(num('n', App.n));
+  n = Math.max(1, Math.min(6, n));
+  let l = Math.round(num('l', App.l));
+  l = Math.max(0, Math.min(Math.min(5, n-1), l));
+  let m = Math.round(num('m', App.m));
+  m = Math.max(-l, Math.min(l, m));
+  App.n = n; App.l = l; App.m = m;
+  App.Z = Math.max(1, Math.min(ION.length-1, Math.round(num('Z', 1))));
+  const md = q.get('mode');
+  if (md && ['points','iso'].indexOf(md) >= 0){
+    App.mode = md;
+    document.querySelectorAll('#modeSeg button').forEach(b=>b.classList.toggle('on', b.dataset.mode===md));
+  }
+  App.N = Math.max(20000, Math.min(600000, Math.round(num('N', App.N)/10000)*10000));
+  document.getElementById('rPts').value = App.N;
+  document.getElementById('vPts').textContent = (App.N/1000).toFixed(0)+'k';
+  App.isoFrac = Math.max(0.01, Math.min(0.99, Math.round(num('iso', App.isoFrac*100))/100));
+  document.getElementById('rIso').value = Math.round(App.isoFrac*100);
+  document.getElementById('vIso').textContent = Math.round(App.isoFrac*100)+'%';
+  App.isoRes = Math.max(64, Math.min(320, Math.round(num('isoN', App.isoRes))));
+  App.intensity = Math.max(0.15, Math.min(2.5, Math.round(num('bright', App.intensity)*20)/20));
+  document.getElementById('rInt').value = App.intensity;
+  document.getElementById('vInt').textContent = App.intensity.toFixed(2);
+  App.psize = Math.max(0.3, Math.min(3, Math.round(num('pt', App.psize)*20)/20));
+  document.getElementById('rSize').value = App.psize;
+  document.getElementById('vSize').textContent = App.psize.toFixed(2);
+  App.phase = bool('phase', App.phase); document.getElementById('cPhase').checked = App.phase;
+  App.nodes = bool('nodes', App.nodes); document.getElementById('cNodes').checked = App.nodes;
+  App.grid  = bool('grid',  App.grid);  document.getElementById('cGrid').checked  = App.grid;
+  App.spin  = bool('spin',  App.spin);  document.getElementById('cSpin').checked  = App.spin;
+  App.lang  = (q.get('lang')==='en') ? 'en' : 'zh';
+  App.quality=Math.max(.75,Math.min(2,Math.round(num('quality',App.quality)*4)/4));
+  document.getElementById('rQual').value=App.quality;
+  document.getElementById('vQual').textContent=App.quality.toFixed(2)+'×';
+  const az = num('az', NaN), el = num('el', NaN), zm = num('zoom', NaN);
+  if (isFinite(az)) Cam.az = az;
+  if (isFinite(el)) Cam.el = Math.max(-Math.PI/2+.001,Math.min(Math.PI/2-.001,el));
+  if (isFinite(zm)) Cam.zoom = Math.max(.06,Math.min(14,zm));
+}
+
+// 当前状态 → 可分享的查询串（与 initFromURL 对应）
+function stateQuery(){
+  const q = new URLSearchParams();
+  q.set('n', App.n); q.set('l', App.l); q.set('m', App.m);
+  if (App.Z !== 1) q.set('Z', App.Z);
+  q.set('mode', App.mode);
+  q.set('N', App.N);q.set('iso',Math.round(App.isoFrac*100));q.set('isoN',App.isoRes);
+  if(App.quality!==1)q.set('quality',App.quality);
+  if(/(^|[?&#])sync=1/.test(location.search+location.hash))q.set('sync',1);
+  if (App.intensity !== 1) q.set('bright', App.intensity);
+  if (App.psize !== 1) q.set('pt', App.psize);
+  if (!App.phase) q.set('phase', 0);
+  if (App.nodes) q.set('nodes', 1);
+  if (!App.grid) q.set('grid', 0);
+  if (App.spin) q.set('spin', 1);
+  if (App.lang !== 'zh') q.set('lang', App.lang);
+  q.set('az', Cam.az.toFixed(3)); q.set('el', Cam.el.toFixed(3)); q.set('zoom', Cam.zoom.toFixed(3));
+  return q.toString();
+}
+
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.dataset.i18n);});
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>el.setAttribute('aria-label',t(el.dataset.i18nAria)));
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>el.title=t(el.dataset.i18nTitle));
+  document.documentElement.lang=App.lang==='zh'?'zh-CN':'en';
+  document.title=t('title')+' · '+t(THEME.id);
+  const lang=document.getElementById('langBtn');
+  lang.textContent=App.lang==='zh'?'EN':'中文';
+  lang.setAttribute('aria-label',App.lang==='zh'?'Switch to English':'切换到中文');
+  document.getElementById('focusLabel').textContent=t(document.body.classList.contains('collapsed')?'exit_focus':'focus');
+  document.getElementById('mathNote').textContent=t('mathNote');
+  updateModeNote();updateDensityNote();updateThemeLinks();refreshRanges();
+}
+
+function labelHTML(lab){
+  const i=lab.indexOf('_');
+  return i<0?lab:lab.slice(0,i)+'<sub>'+lab.slice(i+1)+'</sub>';
+}
+function setPressed(b,on){b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));}
+function buildOrbitalUI(){
+  const nBox=document.getElementById('nChips'),zBox=document.getElementById('zChips'),lBox=document.getElementById('lChips');
+  nBox.replaceChildren();zBox.replaceChildren();lBox.replaceChildren();
+  for(let n=1;n<=6;n++){
+    const b=document.createElement('button');b.className='chip';b.textContent=n;b.dataset.n=n;
+    b.title=t('s_n')+' n = '+n;b.setAttribute('aria-label',b.title);
+    b.onclick=()=>{if(App.n===n)return;App.n=n;App.l=Math.min(App.l,n-1);if(Math.abs(App.m)>App.l)App.m=0;syncOrbitalUI();regenerate(true);};
+    nBox.appendChild(b);
+  }
+  for(let l=0;l<=5;l++){
+    const b=document.createElement('button');b.className='chip';b.textContent=LNAME[l];b.dataset.l=l;
+    b.title=t('s_l')+' l = '+l;b.setAttribute('aria-label',LNAME[l]+', l = '+l);
+    b.onclick=()=>{if(App.l===l)return;App.l=l;if(Math.abs(App.m)>l)App.m=0;syncOrbitalUI();regenerate(true);};
+    lBox.appendChild(b);
+  }
+  for(let Z=1;Z<ION.length;Z++){
+    const b=document.createElement('button');b.className='chip';b.dataset.z=Z;b.textContent=ION[Z];
+    b.title='Z = '+Z+' · '+ION[Z];b.setAttribute('aria-label',b.title);
+    b.onclick=()=>{if(App.Z===Z)return;App.Z=Z;syncOrbitalUI();regenerate(true);};zBox.appendChild(b);
+  }
+}
+function syncOrbitalUI(){
+  document.querySelectorAll('#nChips button').forEach(b=>setPressed(b,+b.dataset.n===App.n));
+  document.querySelectorAll('#zChips button').forEach(b=>setPressed(b,+b.dataset.z===App.Z));
+  document.querySelectorAll('#lChips button').forEach(b=>{setPressed(b,+b.dataset.l===App.l);b.disabled=+b.dataset.l>=App.n;});
+  const M=document.getElementById('mChips');
+  const oldFocus=document.activeElement?.dataset.m;
+  M.replaceChildren();
+  for(let m=-App.l;m<=App.l;m++){
+    const b=document.createElement('button');b.className='chip';b.dataset.m=m;
+    const short=App.l<=3?labelHTML(orbitalLabel(App.n,App.l,m)):App.n+LNAME[App.l];
+    b.innerHTML=short+'<span class="minor">m = '+(m<0?'−'+Math.abs(m):m)+'</span>';
+    b.title=orbitalLabel(App.n,App.l,m)+' · '+t('s_m')+' m = '+m;
+    b.setAttribute('aria-label',b.title);setPressed(b,m===App.m);
+    b.onclick=()=>{if(App.m===m)return;App.m=m;syncOrbitalUI();regenerate(true);};M.appendChild(b);
+    if(oldFocus!==undefined&&+oldFocus===m)b.focus({preventScroll:true});
+  }
+  const lab=orbitalLabel(App.n,App.l,App.m);
+  document.getElementById('badgeTitle').innerHTML=labelHTML(lab);
+  document.getElementById('ionBadge').textContent=ION[App.Z]+(App.Z===1?(App.lang==='zh'?' · 氢原子':' · Hydrogen'):(App.lang==='zh'?' · 类氢离子':' · Hydrogenic ion'));
+  document.getElementById('stateMeta').textContent='n = '+App.n+' · l = '+App.l+' · m = '+App.m;
+  document.getElementById('vState').innerHTML=labelHTML(lab)+' · Z = '+App.Z;
+  document.getElementById('vE').textContent='−'+(RY_EV*App.Z*App.Z/(App.n*App.n)).toFixed(4)+' eV';
+  document.getElementById('vG').textContent=2*App.n*App.n;
+  document.querySelectorAll('[data-preset]').forEach(b=>setPressed(b,b.dataset.preset===[App.n,App.l,App.m].join(',')));
+  updateFormula();updateModeNote();updateThemeLinks();
+}
+function updateFormula(){
+  const {n,l,m,Z}=App;
+  const nr=n+','+l, zr=Z===1?'r':Z+'r',twzr=(2*Z)+'r';
+  let f='ψ<sub>'+n+','+l+','+m+'</sub> = R<sub>'+nr+'</sub> · Y<sup>R</sup><sub>'+l+','+m+'</sub>';
+  f+='<br>R<sub>'+nr+'</sub> ∝ e<sup>−'+zr+'/'+n+'</sup> ('+twzr+'/'+n+')<sup>'+l+'</sup>';
+  f+='<br>　· L<sup>'+(2*l+1)+'</sup><sub>'+(n-l-1)+'</sub>('+twzr+'/'+n+')';
+  f+='<br>E<sub>'+n+'</sub> = −'+(0.5*Z*Z/(n*n)).toFixed(5)+' E<sub>h</sub>';
+  f+='<span class="formula-caption">'+t('formula_units')+'<br>'+t('f_nodes')(n-l-1,l,n-1)+'</span>';
+  document.getElementById('formula').innerHTML=f;
+}
+function updateStatsUI(){
+  const s=App.stats;if(!s||s.key!==orbKey())return;
+  const metric=r=>fmtR(r)+' <span class="metric-unit">a₀</span><small>'+fmtPm(r)+'</small>';
+  [['vR90','r90'],['vR99','r99'],['vMP','mp'],['vMean','mean']].forEach(([id,key])=>{document.getElementById(id).innerHTML=metric(s[key]);});
+  document.getElementById('vMean').title=t('theory')+': '+fmtBoth((3*App.n*App.n-App.l*(App.l+1))/(2*App.Z));
+  document.getElementById('vNodes').textContent=(App.n-App.l-1)+' / '+App.l;
+  document.getElementById('plot').setAttribute('aria-label',t('plot_alt')(App.n,App.l,fmtR(s.mp),fmtR(s.mean),fmtR(s.r90),fmtR(s.r99)));
+  updateRenderStatus();
+}
+function updateRenderStatus(){
+  const el=document.getElementById('renderStatus');if(!el)return;
+  let txt=t('state_wait');
+  if(App.mode==='points'&&Scene.points?.key===orbKey())txt=Scene.points.n.toLocaleString(App.lang==='zh'?'zh-CN':'en-US')+' '+t('num_samples');
+  if(App.mode==='iso'&&Scene.mesh?.key===orbKey())txt=Math.round(App.isoFrac*100)+'% · '+Scene.mesh.gridN+'³ · '+Scene.mesh.tris.toLocaleString(App.lang==='zh'?'zh-CN':'en-US')+' '+t('num_triangles');
+  el.textContent=txt;
+}
+function updateDensityNote(){
+  const el=document.getElementById('densityNote');if(!el)return;
+  let s=t(App.mode==='iso'?'density_note_iso':'density_note_points');
+  if(App.mode==='iso'&&Scene.mesh?.key===orbKey()&&Scene.mesh.enclosed!==undefined)
+    s+=' '+t('integral_estimate')+' '+(Scene.mesh.enclosed*100).toFixed(2)+'% · '+Scene.mesh.gridN+'³';
+  el.textContent=s;updateRenderStatus();
+}
+function updateModeNote(){
+  const isIso=App.mode==='iso';
+  document.getElementById('modeNote').textContent=t('note_'+App.mode);
+  document.getElementById('pointControls').hidden=isIso;
+  document.getElementById('isoControls').hidden=!isIso;
+  document.getElementById('pointAppearance').hidden=isIso;
+  document.getElementById('samplingTitle').textContent=t(isIso?'isosurface_settings':'sampling');
+  document.getElementById('modeSettingTag').textContent=isIso?'P':'|ψ|²';
+  document.querySelectorAll('#modeSeg button').forEach(b=>setPressed(b,b.dataset.mode===App.mode));
+  document.querySelectorAll('#resSeg button').forEach(b=>setPressed(b,+b.dataset.res===App.isoRes));
+  const leg=document.getElementById('phaseLegend');
+  leg.querySelector('.legend-caption').textContent=t(App.phase?'phase_key':'neutral_key');
+  leg.querySelector('.phase-signs').hidden=!App.phase;
+  leg.querySelector('.legend-foot').textContent=t(!App.phase?'neutral_note':isIso?'phase_iso_note':'phase_note');
+  updateDensityNote();
+}
+function updateThemeLinks(){
+  document.querySelectorAll('[data-theme-link]').forEach(a=>{
+    if(a.dataset.themeLink===THEME.id)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');
+    a.href='../'+a.dataset.themeLink+'/index.html?'+stateQuery();
+  });
+}
+function refreshRanges(){
+  document.querySelectorAll('input[type=range]').forEach(el=>{
+    el.style.setProperty('--fill',(100*(+el.value-+el.min)/(+el.max-+el.min)).toFixed(2)+'%');
+    const unit=el.id==='rIso'?'%':el.id==='rQual'?'×':'';
+    el.setAttribute('aria-valuetext',el.value+unit);
+  });
+}
+function selectPanelTab(name,focus){
+  const all=Array.from(document.querySelectorAll('[data-tab]'));
+  all.forEach(b=>{const on=b.dataset.tab===name;b.classList.toggle('on',on);b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1;document.getElementById(b.getAttribute('aria-controls')).hidden=!on;if(on&&focus)b.focus();});
+  document.querySelector('.panel-scroll').scrollTop=0;
+}
+function resetCamera(){Cam.zoom=1;Cam.az=.72;Cam.el=.34;Cam.vAz=Cam.vEl=0;}
+function showError(msg){
+  let el=document.getElementById('errbar');if(!el){el=document.createElement('div');el.id='errbar';el.setAttribute('role','alert');document.body.appendChild(el);}
+  el.textContent=msg;clearTimeout(el._t);el._t=setTimeout(()=>el.remove(),12000);
+}
+
+function exportFigure(){
+  if(busy>0||!(App.mode==='points'?Scene.points?.key===orbKey():Scene.mesh?.key===orbKey())){toast(t('no_export'));return;}
+  try{
+    render();
+    const source=GLR.canvas,out=document.createElement('canvas');
+    const ratio=source.width/Math.max(1,source.clientWidth);
+    const cropTop=0,cropBottom=0;
+    const top=Math.round(100*ratio),bottom=Math.round(58*ratio);
+    const pictureHeight=Math.max(1,source.height-cropTop-cropBottom);
+    out.width=source.width;out.height=pictureHeight+top+bottom;
+    const c=out.getContext('2d');c.fillStyle=THEME.bg;c.fillRect(0,0,out.width,out.height);
+    c.drawImage(source,0,cropTop,source.width,pictureHeight,0,top,source.width,pictureHeight);
+    const overlayRatio=OV.height/source.height;
+    c.drawImage(OV,0,cropTop*overlayRatio,OV.width,pictureHeight*overlayRatio,0,top,source.width,pictureHeight);
+    const write=(str,x,y,size,color,font)=>{c.font=(font||'')+Math.round(size*ratio)+'px '+(font?.includes('italic')?'Georgia, serif':'"Segoe UI", "PingFang SC", sans-serif');c.fillStyle=color;c.fillText(str,x*ratio,y*ratio);};
+    const small=source.clientWidth<550;
+    const lab=document.getElementById('badgeTitle').textContent;
+    write(lab+'  ·  '+ION[App.Z],25,39,small?24:28,THEME.ink,'500 ');
+    const meta='n = '+App.n+'    l = '+App.l+'    m = '+App.m+'    Z = '+App.Z;
+    write(meta,25,65,11,THEME.muted);
+    const modeText=t('m_'+App.mode)+(App.mode==='iso'?' · P = '+Math.round(App.isoFrac*100)+'%':' · N = '+App.N.toLocaleString());
+    write(modeText,25,85,11,THEME.muted);
+    if(App.phase){
+      const bx=small?source.clientWidth-136:source.clientWidth-177;
+      [[THEME.positive,'ψ > 0'],[THEME.negative,'ψ < 0']].forEach(([color,txt],i)=>{
+        c.fillStyle=color;c.beginPath();c.arc((bx+i*71)*ratio,47*ratio,3.5*ratio,0,2*Math.PI);c.fill();
+        write(txt,bx+10+i*71,51,12,THEME.muted);
+      });
+    }
+    const foot=(pictureHeight+top)/ratio;
+    c.strokeStyle=THEME.line;c.lineWidth=.5*ratio;c.beginPath();c.moveTo(25*ratio,(foot+7)*ratio);c.lineTo(out.width-25*ratio,(foot+7)*ratio);c.stroke();
+    const stat='r₉₀ = '+fmtR(App.stats.r90)+' a₀     ⟨r⟩ = '+fmtR(App.stats.mean)+' a₀';
+    write(stat,25,foot+27,10,THEME.muted);
+    write(App.lang==='zh'?'类氢单电子模型 · 非相对论 · 无限核质量':'Hydrogenic model · Nonrelativistic · Infinite nuclear mass',25,foot+44,9,THEME.muted);
+    const safe=(orbitalLabel(App.n,App.l,App.m)+'_Z'+App.Z+'_'+App.mode+'_'+THEME.id).replace(/[\\/:*?"<>|² −]/g,'_');
+    out.toBlob(blob=>{if(!blob){showError(t('shotFail')+'PNG');return;}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=safe+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast(t('export_ready'));},'image/png');
+  }catch(err){showError(t('shotFail')+(err?.message||String(err)));}
+}
+
+function bindControls(){
+  const $=id=>document.getElementById(id);
+  document.querySelectorAll('[data-tab]').forEach(b=>{
+    b.onclick=()=>selectPanelTab(b.dataset.tab,false);
+    b.onkeydown=e=>{const all=Array.from(document.querySelectorAll('[data-tab]'));let i=all.indexOf(b);if(e.key==='ArrowRight')i=(i+1)%all.length;else if(e.key==='ArrowLeft')i=(i+all.length-1)%all.length;else if(e.key==='Home')i=0;else if(e.key==='End')i=all.length-1;else return;e.preventDefault();selectPanelTab(all[i].dataset.tab,true);};
+  });
+  document.querySelectorAll('[data-preset]').forEach(b=>{b.onclick=()=>{[App.n,App.l,App.m]=b.dataset.preset.split(',').map(Number);syncOrbitalUI();regenerate(true);};});
+  document.querySelectorAll('#modeSeg button').forEach(b=>{b.onclick=async()=>{
+    if(App.mode===b.dataset.mode)return;
+    App.mode=b.dataset.mode;updateModeNote();updateThemeLinks();
+    if(!App.stats||App.stats.key!==orbKey()){await regenerate(true);return;}
+    if(App.mode==='points'&&(!Scene.points||Scene.points.key!==orbKey()||Scene.points.n!==App.N))await withLoading(buildPoints);
+    if(App.mode==='iso')await withLoading(()=>buildIso(false));
+    if(App.nodes&&(!Scene.nodeLines||Scene.nodeLines.key!==orbKey()))await withLoading(buildNodes);
+    updateModeNote();
+  };});
+  document.querySelectorAll('#resSeg button').forEach(b=>{b.onclick=async()=>{if(+b.dataset.res===App.isoRes)return;App.isoRes=+b.dataset.res;updateModeNote();if(App.mode==='iso')await withLoading(()=>buildIso(true));updateThemeLinks();};});
+  $('rPts').oninput=e=>{App.N=+e.target.value;$('vPts').textContent=Math.round(App.N/1000)+'k';};
+  $('rPts').onchange=async()=>{if(App.mode==='points'&&App.stats?.key===orbKey())await withLoading(buildPoints);updateThemeLinks();};
+  $('rIso').oninput=e=>{App.isoFrac=+e.target.value/100;$('vIso').textContent=e.target.value+'%';};
+  $('rIso').onchange=async()=>{if(App.mode==='iso'&&App.stats?.key===orbKey())await withLoading(()=>buildIso(false));updateThemeLinks();};
+  $('rInt').oninput=e=>{App.intensity=+e.target.value;$('vInt').textContent=App.intensity.toFixed(2);};
+  $('rSize').oninput=e=>{App.psize=+e.target.value;$('vSize').textContent=App.psize.toFixed(2);};
+  $('rQual').oninput=e=>{App.quality=+e.target.value;$('vQual').textContent=App.quality.toFixed(2)+'×';resize();};
+  document.querySelectorAll('input[type=range]').forEach(el=>el.addEventListener('input',refreshRanges));
+  $('cPhase').onchange=e=>{App.phase=e.target.checked;updateModeNote();};
+  $('cNodes').onchange=async e=>{App.nodes=e.target.checked;if(App.nodes&&App.stats?.key===orbKey()&&Scene.nodeLines?.key!==orbKey())await withLoading(buildNodes);};
+  $('cGrid').onchange=e=>{App.grid=e.target.checked;};$('cSpin').onchange=e=>{App.spin=e.target.checked;};
+  $('resetBtn').onclick=resetCamera;
+  $('zoomOutBtn').onclick=()=>{Cam.zoom=Math.min(14,Cam.zoom*1.2);};$('zoomInBtn').onclick=()=>{Cam.zoom=Math.max(.06,Cam.zoom/1.2);};
+  document.querySelectorAll('[data-view]').forEach(b=>{b.onclick=()=>{Cam.vAz=Cam.vEl=0;if(b.dataset.view==='oblique'){resetCamera();return;}const views={x:[Math.PI/2,0],y:[0,0],z:[0,Math.PI/2-.001]};[Cam.az,Cam.el]=views[b.dataset.view];};});
+  GLR.canvas.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')Cam.az-=.09;else if(e.key==='ArrowRight')Cam.az+=.09;else if(e.key==='ArrowUp')Cam.el+=.09;else if(e.key==='ArrowDown')Cam.el-=.09;else if(e.key==='+'||e.key==='=')Cam.zoom=Math.max(.06,Cam.zoom/1.12);else if(e.key==='-')Cam.zoom=Math.min(14,Cam.zoom*1.12);else if(e.key==='Home')resetCamera();else return;e.preventDefault();Cam.vAz=Cam.vEl=0;});
+  $('shotBtn').onclick=exportFigure;
+  $('linkBtn').onclick=async()=>{
+    const url=new URL(location.href);url.search=stateQuery();url.hash='';
+    try{history.replaceState(null,'',url.href);}catch(_){}
+    try{await navigator.clipboard.writeText(url.href);toast(t(location.protocol==='file:'?'linkLocalCopied':'linkCopied'));}
+    catch(_){$('linkField').value=url.href;$('linkDialog').showModal();$('linkField').focus();$('linkField').select();}
+  };
+  $('langBtn').onclick=()=>{App.lang=App.lang==='zh'?'en':'zh';applyI18n();buildOrbitalUI();syncOrbitalUI();updateStatsUI();drawPlot();};
+  $('collapseBtn').onclick=()=>{const on=document.body.classList.toggle('collapsed');$('collapseBtn').setAttribute('aria-pressed',String(on));$('focusLabel').textContent=t(on?'exit_focus':'focus');$('collapseBtn').title=t(on?'exit_focus':'focus');requestAnimationFrame(()=>{resize();drawPlot();});};
+  document.querySelectorAll('[data-theme-link]').forEach(a=>a.addEventListener('click',()=>{a.href='../'+a.dataset.themeLink+'/index.html?'+stateQuery();}));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('collapsed')&&!$('linkDialog').open)$('collapseBtn').click();});
+  $('verifyBtn').onclick=async()=>{
+    const out=$('verifyOut'),btn=$('verifyBtn');out.style.display='';out.textContent=t('test_running');btn.disabled=true;
+    try{
+      const res=await Backend.run('verify',{});let npass=0;
+      out.innerHTML=res.map(r=>{if(r.pass)npass++;return '<span class="'+(r.pass?'ok':'bad')+'">'+(r.pass?'✓':'✗')+'</span> '+r.name+'\n  '+Number(r.val).toPrecision(7)+(r.ref!==undefined?'  ['+t('ref')+' '+Number(r.ref).toPrecision(7)+']':'')+'  Δ='+r.err.toExponential(1);}).join('\n')+'\n\n'+t('test_passed')+' '+npass+' / '+res.length;
+      out.dataset.passed=npass;out.dataset.total=res.length;
+    }catch(err){out.textContent=err?.message||String(err);}finally{btn.disabled=false;}
+  };
+  if(typeof ResizeObserver!=='undefined')new ResizeObserver(()=>{resize();drawPlot();}).observe(document.querySelector('.workspace'));
+}
+async function withLoading(fn){try{loading(true);await fn();}catch(err){console.error(err);showError(err?.message||String(err));}finally{loading(false);}}
+
+
+/* =====================================================================
+   启动
+   ===================================================================== */
+(async function main(){
+  try{
+    initFromURL();
+    buildOrbitalUI();
+    bindControls();
+    applyI18n();
+    syncOrbitalUI();
+    resize();
+    requestAnimationFrame(frame);
+    await regenerate(true);
+    document.getElementById('mathNote').textContent = t('mathNote');
+    document.body.dataset.ready='true';
+  } catch(err){
+    console.error(err);
+    showError(t('initFail') + ((err && err.message) || String(err)));
+  }
+})();
+</script>
+</body>
+</html>
