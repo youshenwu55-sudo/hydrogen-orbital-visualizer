@@ -1,11 +1,30 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="light">
+<html lang="zh-CN" data-theme="dark" data-edition="single-file">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f6f7f9">
-  <meta name="description" content="氢原子与类氢离子轨道的交互式波函数可视化。支持点云、概率等值面、径向分布及数值自检；完全离线运行。">
-  <title>原子轨道 · 浅色学术版</title>
+  <meta name="theme-color" content="#14191f">
+  <meta name="orbital-build" content="single-file-1.0.0">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2314191f'/%3E%3Ctext x='32' y='47' font-size='50' font-family='serif' font-style='italic' text-anchor='middle' fill='%239db8cc'%3E%CF%88%3C/text%3E%3C/svg%3E">
+  <!-- Single-file edition 1.0.0. Upload ONLY this index.html to your Pages publishing root.
+       Both themes, the calculation worker, the shaders and all styles are embedded.
+       Theme buttons change the live palette; they NEVER navigate to another HTML file.
+       A shared URL can include ?theme=dark or ?theme=light together with orbital parameters.
+       The physics CORE below is preserved unchanged from the supplied academic edition. -->
+  <script>
+  // Apply the theme before the first paint. Explicit shared-link preference takes priority.
+  (()=>{
+    let stored = null, requested = null;
+    try { stored = localStorage.getItem('orbital-academic:theme'); } catch (_) {}
+    try { requested = new URLSearchParams(location.search).get('theme'); } catch (_) {}
+    const valid = value => value === 'dark' || value === 'light';
+    const theme = valid(requested) ? requested : valid(stored) ? stored : 'dark';
+    document.documentElement.dataset.theme = theme;
+    document.querySelector('meta[name="theme-color"]').content = theme === 'light' ? '#f6f7f9' : '#14191f';
+  })();
+  </script>
+  <meta name="description" content="氢原子与类氢离子轨道的交互式波函数可视化。支持点云、概率等值面、径向分布及数值自检；单文件双主题，无需安装，可离线运行。">
+  <title>原子轨道 · 波函数可视化 · 单文件版</title>
   <style>:root{
   color-scheme:dark; --page:#11151a;--panel:#191e25;--surface:#20262e;--stage-bg:#14191f;
   --text:#e2e7ed;--muted:#a4afbc;--faint:#8492a2;--line:#303943;--line-soft:#262e37;
@@ -32,7 +51,7 @@ sub,sup{line-height:0}sub{font-size:.67em;vertical-align:-.2em}sup{font-size:.67
 .brand{display:flex;align-items:center;gap:14px;min-width:0}.brand-mark{width:38px;height:42px;display:grid;place-items:center;border:1px solid var(--line);font:italic 33px/1 var(--serif);color:var(--accent);padding-bottom:5px}
 .eyebrow{font-size:10px;letter-spacing:1.8px;color:var(--muted);font-weight:500}.brand-eyebrow{font-size:9px;letter-spacing:2px;margin-bottom:3px}.brand h1{font-size:16px;font-weight:550;letter-spacing:.4px;margin:0;white-space:nowrap}
 .header-actions{display:flex;align-items:center;gap:9px;flex-shrink:0}.theme-switch{display:flex;gap:2px;padding:3px;background:var(--surface);border:1px solid var(--line);border-radius:5px;margin-right:7px}
-.theme-switch a{color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;min-height:29px;padding:3px 9px;font-size:11px;text-decoration:none;border:1px solid transparent;border-radius:3px}.theme-switch a[aria-current=page]{color:var(--text);background:var(--panel);border-color:var(--line)}.theme-switch svg{width:14px;height:14px}
+.theme-switch button{background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;min-height:29px;padding:3px 9px;font-size:11px;text-decoration:none;border:1px solid transparent;border-radius:3px}.theme-switch button[aria-pressed=true]{color:var(--text);background:var(--panel);border-color:var(--line)}.theme-switch button:hover{color:var(--text)}.theme-switch svg{width:14px;height:14px}
 .btn{background:transparent;border:1px solid var(--line);border-radius:4px;padding:7px 11px;min-height:34px;font-size:12px;line-height:1.4;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,color .15s}.btn:hover{background:var(--button-hover);color:var(--text)}.btn.primary{background:var(--accent-bg);color:var(--accent-text);border-color:var(--accent)}.btn.primary:hover{filter:brightness(1.07)}.btn.text-btn{border-color:transparent;min-width:32px;padding-left:6px;padding-right:6px;color:var(--muted)}.btn.wide{width:100%}.btn.icon-btn{width:34px;padding:7px}.btn:disabled{opacity:.55}
 .workspace{display:grid;flex:1;min-height:0;grid-template-columns:minmax(0,1fr) 338px;grid-template-rows:minmax(285px,1fr) 228px;grid-template-areas:"stage panel" "analysis panel";gap:0}
 #stage{grid-area:stage;position:relative;min-width:0;overflow:hidden;background:var(--stage-bg)}#glcanvas,#overlay{position:absolute;inset:0;display:block;width:100%;height:100%}#glcanvas{cursor:grab;touch-action:none}#glcanvas.drag{cursor:grabbing}#overlay{pointer-events:none}
@@ -59,8 +78,8 @@ dialog{max-width:540px;width:calc(100vw - 40px);background:var(--panel);border:1
 @media(min-width:1600px){.workspace{grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:minmax(380px,1fr) 250px}.tab-pane{padding:24px 26px}.stage-bar{padding:0 30px}#badge{left:33px;top:89px}.phase-legend{right:30px;top:94px}.radial-chart,.radial-data{padding:23px 30px 16px}.stats-grid{gap:17px 22px;margin:12px 0 15px}}
 @media(max-width:1180px){.app-header{padding:0 19px;height:70px;flex-basis:70px}.brand h1{font-size:14px}.brand-mark{width:33px;height:37px;font-size:29px}.brand{gap:10px}.header-actions{gap:5px}.theme-switch{margin-right:0}.workspace{grid-template-columns:minmax(0,1fr) 316px;grid-template-rows:minmax(290px,1fr) 223px}.tab-pane{padding:18px 19px}.panel-tabs{padding:0 19px;gap:24px}.stage-bar{padding:0 20px}.phase-legend .legend-foot{display:none}#badge{left:22px}.radial-chart{padding:17px 18px 12px}.radial-data{padding:17px 18px 12px}#analysis{grid-template-columns:minmax(0,1fr) minmax(250px,.85fr)}.radial-formula{display:none}.stats-grid{gap:11px 10px}.stats-grid dd{font-size:13px}.plot-legend{gap:8px;font-size:8px}.stage-status{padding:0 20px;font-size:9px}.btn#collapseBtn span{display:none}.btn#collapseBtn{padding:7px}}
 @media(max-height:780px) and (min-width:901px){.workspace{grid-template-rows:minmax(280px,1fr) 203px}.radial-chart,.radial-data{padding-top:13px;padding-bottom:10px}.stats-grid{gap:8px 12px;margin-top:5px;margin-bottom:7px}.stats-grid dt{font-size:9px}.stats-grid dd{font-size:13px}.stats-grid dd small{font-size:8px}.node-summary{padding-top:6px}.tab-pane{padding-top:17px}.sec{margin-bottom:15px;padding-bottom:15px}.field{margin-top:16px}#badge{top:75px}.t1{font-size:41px;min-height:49px}.t2{font-size:14px}.phase-legend{top:80px}}
-@media(max-width:900px){body{overflow:auto}#app{height:auto;min-height:100dvh}.app-header{height:auto;min-height:74px;flex-wrap:wrap;flex:0 0 auto;padding:14px 18px;gap:12px}.brand h1{font-size:15px}.header-actions{margin-left:auto}.theme-switch a{padding:3px 7px}.header-actions #shotBtn{padding:7px 9px}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 310px;grid-template-rows:470px auto;grid-template-areas:"stage panel" "analysis analysis";flex:none}.panel-scroll{max-height:650px}.panel-heading{height:52px;flex-basis:52px}#analysis{grid-template-columns:1.1fr 1fr;min-height:228px}.phase-legend{top:183px;right:21px}.phase-signs{gap:12px;font-size:12px}.legend-caption{display:none}.t1{font-size:42px}.t2{font-size:14px}.stage-bar .section-index{gap:7px;font-size:10px}#modeSeg{min-width:165px}#modeSeg button{font-size:10px;padding:4px 8px}.stage-status #hint{max-width:180px}.stage-status #renderStatus{font-size:8px}.collapsed .workspace{height:calc(100dvh - 75px);min-height:420px}.collapsed #stage{height:100%}.collapsed .phase-legend{top:84px}}
-@media(max-width:680px){.app-header{padding:12px 15px;gap:11px}.brand{width:100%}.brand-eyebrow{font-size:8px}.brand h1{font-size:15px}.brand-mark{height:36px}.header-actions{margin:0;width:100%;justify-content:flex-end}.theme-switch{margin-right:auto}.header-actions #collapseBtn span{display:inline}.header-actions .btn{font-size:11px;min-height:32px;padding:6px 8px}.header-actions #collapseBtn span{font-size:10px}.header-actions .icon-label svg{width:14px;height:14px}.theme-switch a{min-height:26px}.workspace{display:flex;flex-direction:column}.workspace #stage{height:480px;flex:0 0 480px}.stage-bar{height:51px;padding:0 18px}#badge{top:74px;left:19px}.t1{font-size:44px}.state-caption{font-size:10px}.phase-legend{right:18px;top:184px}.phase-signs{font-size:12px}.stage-status{padding:0 17px;font-size:8px}.stage-status #hint{max-width:none}.scene-tools{left:18px;bottom:66px}.scene-tools .btn{min-height:32px}.workspace #analysis{order:2;display:grid;grid-template-columns:1fr;min-height:0}.radial-chart{height:217px;padding:18px 18px 13px}.radial-formula{display:block}.plot-legend{font-size:9px;gap:16px}.radial-data{padding:18px;border-left:0;border-top:1px solid var(--line-soft)}.stats-grid{gap:14px 30px;margin:10px 0 14px}.stats-grid dt{font-size:10px}.stats-grid dd{font-size:15px}.stats-grid dd small{font-size:10px}.node-summary{padding-top:11px}.workspace #panel{order:3;border-left:0;border-top:1px solid var(--line)}.panel-heading{padding:0 19px}.panel-tabs{padding:0 19px;gap:34px;flex-basis:49px}.panel-tabs button{font-size:13px}.panel-scroll{overflow:visible;max-height:none}.tab-pane{padding:23px 20px}.chip{min-height:40px}.preset{min-height:39px}.fixed-six .chip{min-height:38px}.orbital-chips .chip{min-height:45px}.sec h2{font-size:12px}.note{font-size:12px}.panel-footer{padding:0 20px}.collapsed .workspace{height:calc(100dvh - 123px);min-height:410px;display:block}.collapsed .workspace #stage{height:100%;min-height:410px}.collapsed .workspace #analysis,.collapsed .workspace #panel{display:none}.collapsed .phase-legend{top:184px}#loading{inset:51px 0 39px}}
+@media(max-width:900px){body{overflow:auto}#app{height:auto;min-height:100dvh}.app-header{height:auto;min-height:74px;flex-wrap:wrap;flex:0 0 auto;padding:14px 18px;gap:12px}.brand h1{font-size:15px}.header-actions{margin-left:auto}.theme-switch button{padding:3px 7px}.header-actions #shotBtn{padding:7px 9px}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 310px;grid-template-rows:470px auto;grid-template-areas:"stage panel" "analysis analysis";flex:none}.panel-scroll{max-height:650px}.panel-heading{height:52px;flex-basis:52px}#analysis{grid-template-columns:1.1fr 1fr;min-height:228px}.phase-legend{top:183px;right:21px}.phase-signs{gap:12px;font-size:12px}.legend-caption{display:none}.t1{font-size:42px}.t2{font-size:14px}.stage-bar .section-index{gap:7px;font-size:10px}#modeSeg{min-width:165px}#modeSeg button{font-size:10px;padding:4px 8px}.stage-status #hint{max-width:180px}.stage-status #renderStatus{font-size:8px}.collapsed .workspace{height:calc(100dvh - 75px);min-height:420px}.collapsed #stage{height:100%}.collapsed .phase-legend{top:84px}}
+@media(max-width:680px){.app-header{padding:12px 15px;gap:11px}.brand{width:100%}.brand-eyebrow{font-size:8px}.brand h1{font-size:15px}.brand-mark{height:36px}.header-actions{margin:0;width:100%;justify-content:flex-end}.theme-switch{margin-right:auto}.header-actions #collapseBtn span{display:inline}.header-actions .btn{font-size:11px;min-height:32px;padding:6px 8px}.header-actions #collapseBtn span{font-size:10px}.header-actions .icon-label svg{width:14px;height:14px}.theme-switch button{min-height:26px}.workspace{display:flex;flex-direction:column}.workspace #stage{height:480px;flex:0 0 480px}.stage-bar{height:51px;padding:0 18px}#badge{top:74px;left:19px}.t1{font-size:44px}.state-caption{font-size:10px}.phase-legend{right:18px;top:184px}.phase-signs{font-size:12px}.stage-status{padding:0 17px;font-size:8px}.stage-status #hint{max-width:none}.scene-tools{left:18px;bottom:66px}.scene-tools .btn{min-height:32px}.workspace #analysis{order:2;display:grid;grid-template-columns:1fr;min-height:0}.radial-chart{height:217px;padding:18px 18px 13px}.radial-formula{display:block}.plot-legend{font-size:9px;gap:16px}.radial-data{padding:18px;border-left:0;border-top:1px solid var(--line-soft)}.stats-grid{gap:14px 30px;margin:10px 0 14px}.stats-grid dt{font-size:10px}.stats-grid dd{font-size:15px}.stats-grid dd small{font-size:10px}.node-summary{padding-top:11px}.workspace #panel{order:3;border-left:0;border-top:1px solid var(--line)}.panel-heading{padding:0 19px}.panel-tabs{padding:0 19px;gap:34px;flex-basis:49px}.panel-tabs button{font-size:13px}.panel-scroll{overflow:visible;max-height:none}.tab-pane{padding:23px 20px}.chip{min-height:40px}.preset{min-height:39px}.fixed-six .chip{min-height:38px}.orbital-chips .chip{min-height:45px}.sec h2{font-size:12px}.note{font-size:12px}.panel-footer{padding:0 20px}.collapsed .workspace{height:calc(100dvh - 123px);min-height:410px;display:block}.collapsed .workspace #stage{height:100%;min-height:410px}.collapsed .workspace #analysis,.collapsed .workspace #panel{display:none}.collapsed .phase-legend{top:184px}#loading{inset:51px 0 39px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}.spin{animation-duration:1.7s}}
 @media print{body{overflow:visible}.app-header .header-actions,#panel,.scene-tools,#loading{display:none!important}#app{height:auto}.workspace{display:block}#stage{height:500px}#analysis{display:grid;grid-template-columns:1fr 1fr;min-height:230px}}
 
@@ -74,7 +93,7 @@ dialog{max-width:540px;width:calc(100vw - 40px);background:var(--panel);border:1
 @media(max-width:1180px){.plot-legend{font-size:9px}}
 @media(max-width:900px){#app{overflow:visible}.t2{display:none}.phase-legend{top:143px;left:22px;right:auto;text-align:left}.phase-signs{justify-content:flex-start}.collapsed .phase-legend{top:143px}}
 @media(max-width:680px){.brand h1{white-space:normal}.workspace #stage{height:550px;flex-basis:550px}.workspace #panel{order:2}.workspace #analysis{order:3}.phase-legend{top:142px;left:20px;right:auto}.collapsed .phase-legend{top:142px}.collapsed .workspace #stage{min-height:450px}.plot-legend{font-size:10px}}
-@media(max-width:360px){.brand h1{font-size:14px}.header-actions #collapseBtn span{display:none}.theme-switch a span{display:none}.theme-switch a{padding:4px 10px}.header-actions{gap:6px}.header-actions #shotBtn{font-size:10px}.t1{font-size:39px}.orbital-line{gap:13px}.state-caption{padding-left:12px}.plot-legend{gap:9px;font-size:9px}}
+@media(max-width:360px){.brand h1{font-size:14px}.header-actions #collapseBtn span{display:none}.theme-switch button span{display:none}.theme-switch button{padding:4px 10px}.header-actions{gap:6px}.header-actions #shotBtn{font-size:10px}.t1{font-size:39px}.orbital-line{gap:13px}.state-caption{padding-left:12px}.plot-legend{gap:9px;font-size:9px}}
 
 /* Canvas intrinsic dimensions must not determine the height of the grid row. */
 #analysis,.radial-chart{min-height:0}
@@ -90,9 +109,9 @@ dialog{max-width:540px;width:calc(100vw - 40px);background:var(--panel);border:1
       <div><div class="eyebrow brand-eyebrow">HYDROGENIC ORBITALS</div><h1 data-i18n="title">原子轨道 · 波函数可视化</h1></div>
     </div>
     <nav class="header-actions" aria-label="界面与导出" data-i18n-aria="a_header">
-      <div class="theme-switch" aria-label="主题" data-i18n-aria="a_theme">
-        <a href="../dark/index.html" data-theme-link="dark" title="暗色主题" data-i18n-title="dark_theme"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 12.3A7 7 0 0 1 7.7 3.5a7 7 0 1 0 8.8 8.8Z"/></svg><span data-i18n="dark">暗色</span></a>
-        <a href="../light/index.html" data-theme-link="light" title="浅色主题" data-i18n-title="light_theme"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.1"/><path d="M10 1v2m0 14v2M1 10h2m14 0h2M3.6 3.6 5 5m10 10 1.4 1.4M3.6 16.4 5 15M15 5l1.4-1.4"/></svg><span data-i18n="light">浅色</span></a>
+      <div class="theme-switch" role="group" aria-label="主题" data-i18n-aria="a_theme">
+        <button type="button" data-theme-choice="dark" aria-pressed="true" title="暗色主题" data-i18n-title="dark_theme"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 12.3A7 7 0 0 1 7.7 3.5a7 7 0 1 0 8.8 8.8Z"/></svg><span data-i18n="dark">暗色</span></button>
+        <button type="button" data-theme-choice="light" aria-pressed="false" title="浅色主题" data-i18n-title="light_theme"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.1"/><path d="M10 1v2m0 14v2M1 10h2m14 0h2M3.6 3.6 5 5m10 10 1.4 1.4M3.6 16.4 5 15M15 5l1.4-1.4"/></svg><span data-i18n="light">浅色</span></button>
       </div>
       <button class="btn text-btn" id="langBtn" aria-label="Switch to English">EN</button>
       <button class="btn icon-label" id="collapseBtn" aria-pressed="false" title="专注视图" data-i18n-title="focus"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 3H3v4m10-4h4v4M3 13v4h4m10-4v4h-4"/></svg><span id="focusLabel" data-i18n="focus">专注视图</span></button>
@@ -180,7 +199,7 @@ dialog{max-width:540px;width:calc(100vw - 40px);background:var(--panel);border:1
           <section class="sec references"><h2 data-i18n="references">参考定义</h2><a href="https://dlmf.nist.gov/14.30" target="_blank" rel="noopener noreferrer">NIST DLMF §14.30 · Spherical harmonics <span>↗</span></a><a href="https://dlmf.nist.gov/18.39#ii" target="_blank" rel="noopener noreferrer">NIST DLMF §18.39(ii) · Hydrogen atom <span>↗</span></a></section>
         </div>
       </div>
-      <footer class="panel-footer"><span class="status-dot"></span><span data-i18n="local_computation">本地计算</span><span class="footer-model">a₀ = 52.918 pm</span></footer>
+      <footer class="panel-footer"><span class="status-dot"></span><span data-i18n="local_computation">单文件 · 本地计算</span><span class="footer-model">a₀ = 52.918 pm</span></footer>
     </aside>
 
     <section id="analysis" aria-label="径向概率分析" data-i18n-aria="a_analysis">
@@ -195,19 +214,20 @@ dialog{max-width:540px;width:calc(100vw - 40px);background:var(--panel);border:1
 <script>
 "use strict";
 
-/* Visual palette: fixed per document; all physical units remain unchanged. */
-const THEME = Object.freeze((()=>{
-  const isLight = document.documentElement.dataset.theme === 'light';
-  return isLight ? {
+/* Single live renderer, two palettes. Switching never changes orbital data or camera state. */
+const THEME_PALETTES = Object.freeze({
+  light: Object.freeze({
     id:'light', isLight:true, bg:'#f6f7f9', ink:'#25313b', muted:'#5f6e7b', faint:'#8b99a5',
     positive:'#b95642', negative:'#3d6f9f', neutral:'#476f8b',
     gold:'#927226', green:'#477c67', plot:'#3d6f9f', line:'#899ba9'
-  } : {
+  }),
+  dark: Object.freeze({
     id:'dark', isLight:false, bg:'#14191f', ink:'#e5e9ed', muted:'#a4b0bc', faint:'#6f7e8c',
     positive:'#de8069', negative:'#7da5ce', neutral:'#90aec7',
     gold:'#c5a464', green:'#82ac98', plot:'#8ab0d1', line:'#586d7f'
-  };
-})());
+  })
+});
+let THEME = document.documentElement.dataset.theme === 'light' ? THEME_PALETTES.light : THEME_PALETTES.dark;
 function rgb(hex){
   const v = parseInt(hex.replace('#',''), 16);
   return [(v>>16 & 255)/255, (v>>8 & 255)/255, (v & 255)/255];
@@ -1415,7 +1435,7 @@ const I18N = {
     reading_note:'电子云表示概率分布，不是电子的运动轨迹。颜色仅标记实波函数的正负，不代表正负电荷。',
     probability_note:'径向概率半径以球内积分定义；等值面按密度阈值定义，两者通常不是同一个边界。视图自动适配范围，实际尺寸以标尺为准。',
     s_math:'数值检查',verify_hint:'检查归一化、节点、Z 标度、采样统计与等值面。结果采用预设容差。',v_verify:'运行数值自检',
-    references:'参考定义',local_computation:'本地计算',s_data:'径向概率分布',lg_rdf:'径向概率密度',lg_mp:'最概然半径',lg_mean:'平均半径',
+    references:'参考定义',local_computation:'单文件 · 本地计算',single_file:'单文件版',s_data:'径向概率分布',lg_rdf:'径向概率密度',lg_mp:'最概然半径',lg_mean:'平均半径',
     radial_statistics:'径向统计',k_mp:'最概然半径',k_mean:'平均半径 ⟨r⟩',k_r90:'径向 90% 概率半径',k_r99:'径向 99% 概率半径',k_nodes:'径向 / 角向节点数',
     s_mode:'显示方式',m_points:'概率点云',m_iso:'概率等值面',hint:'拖动旋转 · 滚轮缩放 · 双击复位',v_reset:'重置视角',
     note_points:'点的位置按 |ψ|² 概率密度采样。屏幕上的疏密和亮度还受投影、粒子尺寸与叠加影响，不能直接读取为概率数值。',
@@ -1455,7 +1475,7 @@ const I18N = {
     reading_note:'The cloud represents a probability distribution, not an electron trajectory. Colors indicate the sign of the real wave function, not electric charge.',
     probability_note:'Radial probability radii use spherical integrals. Isosurfaces use a density threshold, so these are generally different boundaries. The view fits the orbital; read physical sizes from the scale bar.',
     s_math:'Numerical checks',verify_hint:'Check normalization, nodes, Z scaling, sampling and isosurfaces against preset tolerances.',v_verify:'Run numerical self-test',
-    references:'Reference definitions',local_computation:'Local computation',s_data:'Radial probability',lg_rdf:'Radial density',lg_mp:'Most probable',lg_mean:'Mean radius',
+    references:'Reference definitions',local_computation:'Single file · Local',single_file:'Single-file edition',s_data:'Radial probability',lg_rdf:'Radial density',lg_mp:'Most probable',lg_mean:'Mean radius',
     radial_statistics:'Radial statistics',k_mp:'Most probable radius',k_mean:'Mean radius ⟨r⟩',k_r90:'Radial 90% probability radius',k_r99:'Radial 99% probability radius',k_nodes:'Radial / angular nodes',
     s_mode:'Display mode',m_points:'Point cloud',m_iso:'Isosurface',hint:'Drag to rotate · Scroll to zoom · Double-click to reset',v_reset:'Reset view',
     note_points:'Point positions are sampled from |ψ|². Screen density and brightness also depend on projection, point size and blending; pixels are not quantitative probability readings.',
@@ -2073,6 +2093,7 @@ function initFromURL(){
 // 当前状态 → 可分享的查询串（与 initFromURL 对应）
 function stateQuery(){
   const q = new URLSearchParams();
+  q.set('theme', THEME.id);
   q.set('n', App.n); q.set('l', App.l); q.set('m', App.m);
   if (App.Z !== 1) q.set('Z', App.Z);
   q.set('mode', App.mode);
@@ -2095,13 +2116,13 @@ function applyI18n(){
   document.querySelectorAll('[data-i18n-aria]').forEach(el=>el.setAttribute('aria-label',t(el.dataset.i18nAria)));
   document.querySelectorAll('[data-i18n-title]').forEach(el=>el.title=t(el.dataset.i18nTitle));
   document.documentElement.lang=App.lang==='zh'?'zh-CN':'en';
-  document.title=t('title')+' · '+t(THEME.id);
+  document.title=t('title')+' · '+t(THEME.id)+' · '+t('single_file');
   const lang=document.getElementById('langBtn');
   lang.textContent=App.lang==='zh'?'EN':'中文';
   lang.setAttribute('aria-label',App.lang==='zh'?'Switch to English':'切换到中文');
   document.getElementById('focusLabel').textContent=t(document.body.classList.contains('collapsed')?'exit_focus':'focus');
   document.getElementById('mathNote').textContent=t('mathNote');
-  updateModeNote();updateDensityNote();updateThemeLinks();refreshRanges();
+  updateModeNote();updateDensityNote();syncThemeControls();refreshRanges();
 }
 
 function labelHTML(lab){
@@ -2154,7 +2175,7 @@ function syncOrbitalUI(){
   document.getElementById('vE').textContent='−'+(RY_EV*App.Z*App.Z/(App.n*App.n)).toFixed(4)+' eV';
   document.getElementById('vG').textContent=2*App.n*App.n;
   document.querySelectorAll('[data-preset]').forEach(b=>setPressed(b,b.dataset.preset===[App.n,App.l,App.m].join(',')));
-  updateFormula();updateModeNote();updateThemeLinks();
+  updateFormula();updateModeNote();syncThemeControls();
 }
 function updateFormula(){
   const {n,l,m,Z}=App;
@@ -2205,11 +2226,43 @@ function updateModeNote(){
   leg.querySelector('.legend-foot').textContent=t(!App.phase?'neutral_note':isIso?'phase_iso_note':'phase_note');
   updateDensityNote();
 }
-function updateThemeLinks(){
-  document.querySelectorAll('[data-theme-link]').forEach(a=>{
-    if(a.dataset.themeLink===THEME.id)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');
-    a.href='../'+a.dataset.themeLink+'/index.html?'+stateQuery();
+function syncThemeControls(){
+  document.querySelectorAll('[data-theme-choice]').forEach(button=>{
+    button.setAttribute('aria-pressed', String(button.dataset.themeChoice === THEME.id));
   });
+}
+function setTheme(id){
+  if (id !== 'dark' && id !== 'light') return;
+  const changed = THEME.id !== id;
+  THEME = THEME_PALETTES[id];
+  document.documentElement.dataset.theme = id;
+  document.querySelector('meta[name="theme-color"]').content = THEME.bg;
+  document.title = t('title') + ' · ' + t(id) + ' · ' + t('single_file');
+  syncThemeControls();
+  try { localStorage.setItem('orbital-academic:theme', id); } catch (_) {}
+
+  if (changed) {
+    // Grid colours are stored in GPU buffers: invalidate them for the next frame.
+    gridCache.key = null;
+    // Recolour existing nodal lines in place. Do NOT resample or remesh the orbital.
+    const lines = Scene.nodeLines;
+    if (lines && lines.cb && lines.n) {
+      const colours = new Float32Array(lines.n * 3), colour = rgb(THEME.gold);
+      for (let i=0; i<colours.length; i+=3) colours.set(colour, i);
+      const gl = GLR.gl;
+      gl.bindBuffer(gl.ARRAY_BUFFER, lines.cb);
+      gl.bufferData(gl.ARRAY_BUFFER, colours, gl.STATIC_DRAW);
+    }
+    drawPlot();
+    render();
+  }
+  // Update only this document's query string. replaceState makes no network request.
+  // Failure (e.g. a restricted local-file viewer) must never prevent theme switching.
+  try {
+    const here = new URL(location.href);
+    here.search = stateQuery();
+    history.replaceState(null, '', here.href);
+  } catch (_) {}
 }
 function refreshRanges(){
   document.querySelectorAll('input[type=range]').forEach(el=>{
@@ -2277,18 +2330,18 @@ function bindControls(){
   document.querySelectorAll('[data-preset]').forEach(b=>{b.onclick=()=>{[App.n,App.l,App.m]=b.dataset.preset.split(',').map(Number);syncOrbitalUI();regenerate(true);};});
   document.querySelectorAll('#modeSeg button').forEach(b=>{b.onclick=async()=>{
     if(App.mode===b.dataset.mode)return;
-    App.mode=b.dataset.mode;updateModeNote();updateThemeLinks();
+    App.mode=b.dataset.mode;updateModeNote();syncThemeControls();
     if(!App.stats||App.stats.key!==orbKey()){await regenerate(true);return;}
     if(App.mode==='points'&&(!Scene.points||Scene.points.key!==orbKey()||Scene.points.n!==App.N))await withLoading(buildPoints);
     if(App.mode==='iso')await withLoading(()=>buildIso(false));
     if(App.nodes&&(!Scene.nodeLines||Scene.nodeLines.key!==orbKey()))await withLoading(buildNodes);
     updateModeNote();
   };});
-  document.querySelectorAll('#resSeg button').forEach(b=>{b.onclick=async()=>{if(+b.dataset.res===App.isoRes)return;App.isoRes=+b.dataset.res;updateModeNote();if(App.mode==='iso')await withLoading(()=>buildIso(true));updateThemeLinks();};});
+  document.querySelectorAll('#resSeg button').forEach(b=>{b.onclick=async()=>{if(+b.dataset.res===App.isoRes)return;App.isoRes=+b.dataset.res;updateModeNote();if(App.mode==='iso')await withLoading(()=>buildIso(true));syncThemeControls();};});
   $('rPts').oninput=e=>{App.N=+e.target.value;$('vPts').textContent=Math.round(App.N/1000)+'k';};
-  $('rPts').onchange=async()=>{if(App.mode==='points'&&App.stats?.key===orbKey())await withLoading(buildPoints);updateThemeLinks();};
+  $('rPts').onchange=async()=>{if(App.mode==='points'&&App.stats?.key===orbKey())await withLoading(buildPoints);syncThemeControls();};
   $('rIso').oninput=e=>{App.isoFrac=+e.target.value/100;$('vIso').textContent=e.target.value+'%';};
-  $('rIso').onchange=async()=>{if(App.mode==='iso'&&App.stats?.key===orbKey())await withLoading(()=>buildIso(false));updateThemeLinks();};
+  $('rIso').onchange=async()=>{if(App.mode==='iso'&&App.stats?.key===orbKey())await withLoading(()=>buildIso(false));syncThemeControls();};
   $('rInt').oninput=e=>{App.intensity=+e.target.value;$('vInt').textContent=App.intensity.toFixed(2);};
   $('rSize').oninput=e=>{App.psize=+e.target.value;$('vSize').textContent=App.psize.toFixed(2);};
   $('rQual').oninput=e=>{App.quality=+e.target.value;$('vQual').textContent=App.quality.toFixed(2)+'×';resize();};
@@ -2309,7 +2362,7 @@ function bindControls(){
   };
   $('langBtn').onclick=()=>{App.lang=App.lang==='zh'?'en':'zh';applyI18n();buildOrbitalUI();syncOrbitalUI();updateStatsUI();drawPlot();};
   $('collapseBtn').onclick=()=>{const on=document.body.classList.toggle('collapsed');$('collapseBtn').setAttribute('aria-pressed',String(on));$('focusLabel').textContent=t(on?'exit_focus':'focus');$('collapseBtn').title=t(on?'exit_focus':'focus');requestAnimationFrame(()=>{resize();drawPlot();});};
-  document.querySelectorAll('[data-theme-link]').forEach(a=>a.addEventListener('click',()=>{a.href='../'+a.dataset.themeLink+'/index.html?'+stateQuery();}));
+  document.querySelectorAll('[data-theme-choice]').forEach(button=>button.addEventListener('click',()=>setTheme(button.dataset.themeChoice)));
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('collapsed')&&!$('linkDialog').open)$('collapseBtn').click();});
   $('verifyBtn').onclick=async()=>{
     const out=$('verifyOut'),btn=$('verifyBtn');out.style.display='';out.textContent=t('test_running');btn.disabled=true;
