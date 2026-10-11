@@ -2206,10 +2206,19 @@ function updateModeNote(){
   updateDensityNote();
 }
 function themeSwitchHref(theme){
-  // Resolve the application root from the active theme URL. Handles both
-  // GitHub Pages project subpaths and locally opened file:// HTML files.
-  const m = location.pathname.match(/^(.*\/)(?:dark|light)(?:\/index\.html|\/)?$/);
-  const root = m ? m[1] : '../';
+  // The live GitHub Pages site is a project site, not the user's root site.
+  // Always keep the repository name when switching themes. Retain support for file:// and other hosts.
+  const repoRoot = '/hydrogen-orbital-visualizer/';
+  const here = location.pathname;
+  let root;
+  if (location.protocol === 'file:') {
+    root = '../';
+  } else if (here === repoRoot.slice(0,-1) || here.startsWith(repoRoot)) {
+    root = repoRoot;
+  } else {
+    const m = here.match(/^(.*\/)(?:dark|light)(?:\/index\.html|\/)?$/);
+    root = m ? m[1] : './';
+  }
   return root + theme + '/index.html?' + stateQuery();
 }
 function updateThemeLinks(){
