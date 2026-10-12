@@ -4,13 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#14191f">
-  <meta name="orbital-build" content="single-file-1.0.0">
+  <meta name="orbital-build" content="single-file-1.1.0-real-basis">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2314191f'/%3E%3Ctext x='32' y='47' font-size='50' font-family='serif' font-style='italic' text-anchor='middle' fill='%239db8cc'%3E%CF%88%3C/text%3E%3C/svg%3E">
-  <!-- Single-file edition 1.0.0. By Wuyoushen@mail.xjtu.edu.cn 20261012.
+  <!-- Single-file edition 1.1.0 (real-basis notation correction). Upload ONLY this index.html to your Pages publishing root.
        Both themes, the calculation worker, the shaders and all styles are embedded.
        Theme buttons change the live palette; they NEVER navigate to another HTML file.
        A shared URL can include ?theme=dark or ?theme=light together with orbital parameters.
-     -->
+       The production sampling/meshing algorithms are unchanged; regression checks were added.
+       mu indexes a REAL basis, not an eigenvalue of Lz. New URLs use basis=real&mu=...
+       Legacy m=... links are read as the old REAL-basis index for backward compatibility. -->
   <script>
   // Apply the theme before the first paint. Explicit shared-link preference takes priority.
   (()=>{
@@ -24,7 +26,7 @@
   })();
   </script>
   <meta name="description" content="氢原子与类氢离子轨道的交互式波函数可视化。支持点云、概率等值面、径向分布及数值自检；单文件双主题，无需安装，可离线运行。">
-  <title>原子轨道 · 波函数可视化 · 单文件版</title>
+  <title>原子轨道 · 波函数可视化 · 单文件版 1.1</title>
   <style>:root{
   color-scheme:dark; --page:#11151a;--panel:#191e25;--surface:#20262e;--stage-bg:#14191f;
   --text:#e2e7ed;--muted:#a4afbc;--faint:#8492a2;--line:#303943;--line-soft:#262e37;
@@ -99,6 +101,20 @@ dialog{max-width:540px;width:calc(100vw - 40px);background:var(--panel);border:1
 #analysis,.radial-chart{min-height:0}
 .plot{height:0;min-height:0;flex:1 1 0}
 .analysis-heading,.plot-legend{flex-shrink:0}
+
+/* 1.1: real-basis identity is visible at the point of orbital selection. */
+.basis-card{margin-top:12px;padding:11px 12px;border:1px solid var(--line);border-left:2px solid var(--accent);border-radius:4px;background:var(--surface)}
+.basis-kind{font-size:11px;font-weight:600;color:var(--accent-text);line-height:1.6}
+.basis-formula{font-size:15px;line-height:1.9;margin:5px 0;overflow-wrap:anywhere;color:var(--text)}
+.basis-explanation{font-size:11px;line-height:1.7;color:var(--muted);overflow-wrap:anywhere}
+.basis-detail-link{margin-top:8px;padding:0;border:0;background:transparent;color:var(--accent);font-size:10px;text-align:left}
+.basis-theory-box{margin-top:15px;padding-top:12px;border-top:1px solid var(--line)}
+.basis-theory-box h3{margin:0 0 7px;font-size:12px;font-weight:600}
+#stateMeta{line-height:1.6;white-space:normal;overflow-wrap:anywhere}
+.state-caption{min-width:0}.t1{flex-shrink:0}
+.orbital-chips .minor{font-family:var(--ui);font-size:10px;line-height:1.4}
+#basisTheoryFormula{font:14px/1.9 var(--serif)}
+@media(max-width:680px){.basis-formula{font-size:17px}.basis-explanation{font-size:12px}.basis-kind{font-size:12px}.basis-detail-link{font-size:12px}.state-caption{max-width:205px}}
 </style>
 </head>
 <body>
@@ -132,8 +148,8 @@ dialog{max-width:540px;width:calc(100vw - 40px);background:var(--panel);border:1
       </div>
       <div id="badge">
         <div class="eyebrow" data-i18n="current_orbital">当前轨道</div>
-        <div class="orbital-line"><div class="t1" id="badgeTitle">2p<sub>z</sub></div><div class="state-caption"><span id="ionBadge">H</span><span id="stateMeta">n = 2 · l = 1 · m = 0</span></div></div>
-        <div class="t2 math">ψ(r, θ, φ) = R<sub>nl</sub>(r) Y<sup>R</sup><sub>lm</sub>(θ, φ)</div>
+        <div class="orbital-line"><div class="t1" id="badgeTitle">2p<sub>z</sub></div><div class="state-caption"><span id="ionBadge">H</span><span id="stateMeta">n = 2 · l = 1 · mₗ = 0</span></div></div>
+        <div class="t2 math">ψ(r, θ, φ) = R<sub>nl</sub>(r) Y<sup>R</sup><sub>lμ</sub>(θ, φ)</div>
       </div>
       <div id="phaseLegend" class="phase-legend">
         <div class="legend-caption" data-i18n="phase_key">实波函数符号</div>
@@ -165,7 +181,17 @@ dialog{max-width:540px;width:calc(100vw - 40px);background:var(--panel);border:1
           <section class="sec quantum-section">
             <div class="field"><h2 id="nLabel"><span data-i18n="s_n">主量子数</span><span class="symbol">n</span></h2><div class="chips fixed-six" id="nChips" role="group" aria-labelledby="nLabel"></div></div>
             <div class="field"><h2 id="lLabel"><span data-i18n="s_l">角量子数</span><span class="symbol">l</span></h2><div class="chips fixed-six" id="lChips" role="group" aria-labelledby="lLabel"></div></div>
-            <div class="field"><h2 id="mLabel"><span data-i18n="s_m">实球谐分量</span><span class="symbol">m</span></h2><div class="chips orbital-chips" id="mChips" role="group" aria-labelledby="mLabel"></div><div class="note basis-note" data-i18n="basis_short">m 为实球谐基底标签；非零分量由 ±|m| 组合。</div></div>
+            <div class="field">
+              <h2 id="mLabel"><span data-i18n="s_m">实轨道基函数</span><span class="symbol">Yᴿ</span></h2>
+              <div class="chips orbital-chips" id="mChips" role="group" aria-labelledby="mLabel"></div>
+              <div class="note basis-note" data-i18n="basis_short">±k 表示 mₗ = +k 与 −k 态的相干叠加，不是单一磁量子数。</div>
+              <div class="basis-card" id="basisCard" aria-live="polite" aria-atomic="true">
+                <div class="basis-kind" id="basisKind"></div>
+                <div class="basis-formula math" id="basisFormula"></div>
+                <p class="basis-explanation" id="basisExplanation"></p>
+                <button class="basis-detail-link" id="basisDetailBtn" type="button" data-i18n="basis_more">实基与磁量子数说明 →</button>
+              </div>
+            </div>
             <div class="field"><h2 id="zLabel"><span data-i18n="s_Z">核电荷</span><span class="symbol">Z</span></h2><div class="chips fixed-six ion-chips" id="zChips" role="group" aria-labelledby="zLabel"></div></div>
           </section>
           <section class="sec sampling-section" id="secDensity">
@@ -193,13 +219,19 @@ dialog{max-width:540px;width:calc(100vw - 40px);background:var(--panel);border:1
         </div>
 
         <div id="pane-theory" class="tab-pane" role="tabpanel" aria-labelledby="tab-theory" hidden>
-          <section class="sec"><h2 data-i18n="model_scope">模型与约定</h2><p class="body-note" id="mathNote"></p><div class="formula" id="formula"></div><p class="note" data-i18n="basis_long">实球谐采用化学相位约定。m &gt; 0 对应 cos(mφ)，m &lt; 0 对应 sin(|m|φ)；非零分量不是 Lz 本征态。</p><div class="state-detail"><span data-i18n="k_state">当前基函数</span><span id="vState">2p<sub>z</sub></span></div></section>
+          <section class="sec"><h2 data-i18n="model_scope">模型与约定</h2><p class="body-note" id="mathNote"></p><div class="formula" id="formula"></div><p class="note" data-i18n="basis_long">μ 仅为实基编号，不是磁量子数 mₗ。非零实基由 mₗ = ±|μ| 的复球谐相干叠加而成。</p>
+          <section class="basis-theory-box"><h3 data-i18n="basis_definition">实基与磁量子数</h3>
+            <p class="note" data-i18n="basis_eigen">复球谐满足 Lz Yₗᵐ = mℏ Yₗᵐ。非零 m 的空间波函数通常为复值。</p>
+            <div class="formula" id="basisTheoryFormula"></div>
+            <p class="note" data-i18n="basis_stationary">本模型中的实轨道仍是 H 和 L² 的本征态；非零实基不是 Lz 本征态。相干叠加不是概率混合，也不是不同 l 轨道的杂化。</p>
+            <p class="note" data-i18n="basis_scope">本版绘制实轨道，不提供独立的复球谐 mₗ 本征态渲染。μ &gt; 0 为 cos 分量，μ &lt; 0 为 sin 分量；Yᴿ 表示实球谐，Y 表示采用 Condon–Shortley 相位的复球谐。</p>
+          </section><div class="state-detail"><span data-i18n="k_state">当前基函数</span><span id="vState">2p<sub>z</sub></span></div></section>
           <section class="sec"><h2 data-i18n="reading_figure">如何读图</h2><p class="body-note" id="modeNote"></p><p class="note" data-i18n="reading_note">电子云表示概率分布，不是电子的运动轨迹。颜色仅标记实波函数的正负，不代表正负电荷。</p><p class="note" data-i18n="probability_note">径向概率半径以球内积分定义；等值面按密度阈值定义，两者通常不是同一个边界。</p></section>
           <section class="sec"><h2 data-i18n="s_math">数值检查</h2><p class="note" data-i18n="verify_hint">检查归一化、节点、Z 标度、采样统计与等值面。结果采用预设容差。</p><button class="btn wide" id="verifyBtn" data-i18n="v_verify">运行数值自检</button><div class="verify" id="verifyOut" style="display:none" role="status"></div></section>
           <section class="sec references"><h2 data-i18n="references">参考定义</h2><a href="https://dlmf.nist.gov/14.30" target="_blank" rel="noopener noreferrer">NIST DLMF §14.30 · Spherical harmonics <span>↗</span></a><a href="https://dlmf.nist.gov/18.39#ii" target="_blank" rel="noopener noreferrer">NIST DLMF §18.39(ii) · Hydrogen atom <span>↗</span></a></section>
         </div>
       </div>
-      <footer class="panel-footer"><span class="status-dot"></span><span data-i18n="local_computation">单文件 · 本地计算</span><span class="footer-model">a₀ = 52.918 pm</span></footer>
+      <footer class="panel-footer"><span class="status-dot"></span><span data-i18n="local_computation">单文件 1.1 · 实基修订</span><span class="footer-model">a₀ = 52.918 pm</span></footer>
     </aside>
 
     <section id="analysis" aria-label="径向概率分析" data-i18n-aria="a_analysis">
@@ -236,7 +268,8 @@ function rgb(hex){
 /* =====================================================================
    氢原子电子云 · 3D 可视化
    物理内核：库仑势中薛定谔方程的精确解析解（原子单位 a0 = 1, ħ = m_e = e = 1）
-     ψ_nlm(r,θ,φ) = R_nl(r) · Y_lm(θ,φ)
+     ψ^R_nlμ(r,θ,φ) = R_nl(r) · Y^R_lμ(θ,φ)
+     本 CORE 接口中的 m 是历史命名，始终指实基编号 μ，而非 Lz 本征值。
      R_nl(r) = N · e^{-Zr/n} (2Zr/n)^l L^{2l+1}_{n-l-1}(2Zr/n)
    电子云按 |ψ|² 概率密度做拒绝采样（径向用逆变换采样，角度用查表拒绝采样）
    v2：修复节球大圆 / 旧数据残留 / PNG 黑图 / 加载遮罩泄漏；完整支持类氢离子 Z；
@@ -305,7 +338,7 @@ function CORE(){
     return function(r){ return rn * EX(-zz*r) * Math.pow(rho*r, l) * laguerre(k, a, rho*r); };
   }
 
-  /* ---------- 实球谐函数 Y_lm(θ,φ)（实组合，m>0 ∝ cos mφ，m<0 ∝ sin mφ） ----------
+  /* ---------- 实球谐函数 Y^R_lμ(θ,φ)（参数 m=μ；μ>0 为 cos，μ<0 为 sin） ----------
      P_l^m 含 Condon–Shortley 相位 (−1)^m；实组合再乘 (−1)^m 将其抵消，
      得到化学教材惯例：p_x 正瓣在 +x，d_xz 在 x,z>0 象限为正 */
   function yNorm(l,am){
@@ -937,13 +970,13 @@ function CORE(){
           s += v*v*w;
         }
       }
-      ok(`∫|Y_${l},${m}|²dΩ = 1`, s, 1, 3e-3);
+      ok(`∫|Yᴿ_${l},μ=${m}|²dΩ = 1`, s, 1, 3e-3);
     }
     // 5) 解析对照：Y00, Y10, Y20, Y22
-    ok('Y_00 = 1/√(4π)', realY(0,0,0.3,0.7), 1/SQ(4*PI), 1e-12);
-    ok('Y_10 = √(3/4π)·cosθ', realY(1,0,0.42,0), SQ(3/(4*PI))*0.42, 1e-12);
-    ok('Y_20 = √(5/16π)(3cos²θ-1)', realY(2,0,0.37,0), SQ(5/(16*PI))*(3*0.37*0.37-1), 1e-12);
-    ok('Y_22 = √(15/16π)sin²θcos2φ', realY(2,2,0.6,0.9), SQ(15/(16*PI))*(1-0.36)*Math.cos(1.8), 1e-12);
+    ok('Yᴿ_00 = 1/√(4π)', realY(0,0,0.3,0.7), 1/SQ(4*PI), 1e-12);
+    ok('Yᴿ_10 = √(3/4π)·cosθ', realY(1,0,0.42,0), SQ(3/(4*PI))*0.42, 1e-12);
+    ok('Yᴿ_20 = √(5/16π)(3cos²θ-1)', realY(2,0,0.37,0), SQ(5/(16*PI))*(3*0.37*0.37-1), 1e-12);
+    ok('Yᴿ_22 = √(15/16π)sin²θcos2φ', realY(2,2,0.6,0.9), SQ(15/(16*PI))*(1-0.36)*Math.cos(1.8), 1e-12);
     // 6) 径向分布峰值：1s 在 r=1a0，2p 在 r=4a0；R_2s(2a0)=0
     {
       const s1 = radialStats(1,0,1,20,20000);
@@ -992,16 +1025,16 @@ function CORE(){
       const refs = [[2,1,0,0.9],[2,1,1,0.75],[3,2,-1,0.9],[3,0,0,0.5],[4,3,2,0.99],[5,4,-3,0.25]];
       for (const [n,l,m,f] of refs){
         const s = isoLevel({n:n,l:l,m:m,Z:1,frac:f,rmaxRad:Math.max(30, 6*n*n*(n+2))});
-        ok(`iso ${n}${['s','p','d','f','g'][l]} m=${m} P=${(f*100).toFixed(0)}% 自洽`, s.enclosed, f, 1e-3);
+        ok(`iso ${n}${['s','p','d','f','g'][l]} μ=${m} P=${(f*100).toFixed(0)}% 自洽`, s.enclosed, f, 1e-3);
       }
     }
     // 11) 实球谐相位惯例（化学教材）：p_x 正瓣在 +x、p_y 在 +y、d_xz 在 x,z>0 为正
     {
       const ct = 0.3, st = SQ(1-ct*ct), ph = 0.4;
-      ok('Y_1,1 = +√(3/4π)·sinθ·cosφ  (p_x)', realY(1,1,ct,ph), SQ(3/(4*PI))*st*Math.cos(ph), 1e-12);
-      ok('Y_1,−1 = +√(3/4π)·sinθ·sinφ  (p_y)', realY(1,-1,ct,ph), SQ(3/(4*PI))*st*Math.sin(ph), 1e-12);
-      ok('Y_2,1 = +√(15/4π)·sinθcosθ·cosφ  (d_xz)', realY(2,1,ct,ph), SQ(15/(4*PI))*st*ct*Math.cos(ph), 1e-12);
-      ok('Y_3,3 ∝ +sin³θ·cos3φ  (f_x(x²−3y²))', Math.sign(realY(3,3,0,0)), 1, 0);
+      ok('Yᴿ_1,1 = +√(3/4π)·sinθ·cosφ  (p_x)', realY(1,1,ct,ph), SQ(3/(4*PI))*st*Math.cos(ph), 1e-12);
+      ok('Yᴿ_1,−1 = +√(3/4π)·sinθ·sinφ  (p_y)', realY(1,-1,ct,ph), SQ(3/(4*PI))*st*Math.sin(ph), 1e-12);
+      ok('Yᴿ_2,1 = +√(15/4π)·sinθcosθ·cosφ  (d_xz)', realY(2,1,ct,ph), SQ(15/(4*PI))*st*ct*Math.cos(ph), 1e-12);
+      ok('Yᴿ_3,3 ∝ +sin³θ·cos3φ  (f_x(x²−3y²))', Math.sign(realY(3,3,0,0)), 1, 0);
     }
     // 12) 类氢离子标度：⟨r⟩ = (3n²−l(l+1))/(2Z)
     for (const [n,l,Z] of [[1,0,2],[2,1,3],[3,2,6]]){
@@ -1027,7 +1060,7 @@ function CORE(){
       const g = densityGrid({n:n,l:l,m:m,Z:1,N:128,rmax:lv.box*1.04});
       let s = 0; const v = g.vals;
       for (let i=0;i<v.length;i++) if (v[i] >= lv.th) s += v[i];
-      ok(`网格独立积分 ${n}${['s','p','d','f','g'][l]} m=${m}：P(|ψ|²≥th) = ${f}`, s*g.dV, f, 5e-3);
+      ok(`网格独立积分 ${n}${['s','p','d','f','g'][l]} μ=${m}：P(|ψ|²≥th) = ${f}`, s*g.dV, f, 5e-3);
     }
     // 15) Marching Cubes：曲面封闭（每条边恰被两个三角形共享），1s 球体积与解析一致
     {
@@ -1060,6 +1093,49 @@ function CORE(){
       }
       ok('点云样本 ⟨r⟩_2p = 5 a₀（统计）', sr/pc.count, 5, 0.03);
       ok('点云 2p_z 正相位占比 = 1/2（统计）', sp/pc.count, 0.5, 0.01);
+    }
+
+    // 17) Real versus complex harmonics, through l=5 (all displayed real basis functions).
+    // cY uses the complex definition and the negative-order conjugation identity.
+    const cY=(l,ml,ct,ph)=>{
+      const k=AB(ml),a=yNorm(l,k)*legendre(l,k,ct),z=[a*Math.cos(k*ph),a*Math.sin(k*ph)];
+      if(ml>=0)return z;
+      const sign=k%2?-1:1;return [sign*z[0],-sign*z[1]];
+    };
+    for(let l=0;l<=5;l++){
+      let realError=0,imagError=0;
+      for(let mu=-l;mu<=l;mu++)for(const ct of [-.93,-.2,.31,.79])for(const ph of [.07,.62,1.9,4.7]){
+        const k=AB(mu),p=cY(l,k,ct,ph),n=cY(l,-k,ct,ph),sign=k%2?-1:1;
+        let z;
+        if(mu===0)z=p;
+        else if(mu>0)z=[(n[0]+sign*p[0])/Math.SQRT2,(n[1]+sign*p[1])/Math.SQRT2];
+        else z=[-(n[1]-sign*p[1])/Math.SQRT2,(n[0]-sign*p[0])/Math.SQRT2];
+        realError=Math.max(realError,AB(z[0]-realY(l,mu,ct,ph)));
+        imagError=Math.max(imagError,AB(z[1]));
+      }
+      ok('Real/complex basis identity · l='+l,realError,0,2e-12);
+      ok('Real combination imaginary residual · l='+l,imagError,0,2e-12);
+    }
+    // Lz=-iℏ ∂/∂φ: Lz px = iℏ py, Lz py = -iℏ px, not ±ℏ times itself.
+    {
+      const ct=.3,ph=.47,h=1e-5;
+      const dpx=(realY(1,1,ct,ph+h)-realY(1,1,ct,ph-h))/(2*h);
+      const dpy=(realY(1,-1,ct,ph+h)-realY(1,-1,ct,ph-h))/(2*h);
+      ok('Lz px = iℏ py (imaginary component / ℏ)',-dpx,realY(1,-1,ct,ph),1e-8);
+      ok('Lz py = −iℏ px (imaginary component / ℏ)',-dpy,-realY(1,1,ct,ph),1e-8);
+      const z=cY(1,1,0,PI/2);
+      ok('Complex Y_1,+1 at θ=φ=π/2 has nonzero Im',z[1],-SQ(3/(8*PI)),1e-12);
+      const z0=cY(1,1,.3,0),z1=cY(1,1,.3,PI/2);
+      ok('Complex |Y_1,+1|² is azimuthally invariant',z0[0]**2+z0[1]**2,z1[0]**2+z1[1]**2,1e-12);
+      // Deterministic midpoint quadrature in cosθ,φ, independent of the real-basis formula labels.
+      let inner=0,lz2=0;const NT=400,NP=240;
+      for(let i=0;i<NT;i++)for(let j=0;j<NP;j++){
+        const c=-1+(i+.5)*2/NT,p=(j+.5)*2*PI/NP,w=2/NT*2*PI/NP;
+        const x=realY(1,1,c,p),y=realY(1,-1,c,p);
+        inner+=x*y*w;lz2+=y*y*w;
+      }
+      ok('⟨px|py⟩ = 0; hence ⟨Lz⟩_px = 0',inner,0,1e-8);
+      ok('⟨Lz²⟩_px / ℏ² = 1 (not an mₗ=0 state)',lz2,1,1e-5);
     }
     return out;
   }
@@ -1365,7 +1441,7 @@ const GLR = (function(){
    应用状态
    ===================================================================== */
 const App = {
-  n:2, l:1, m:0, Z:1,
+  n:2, l:1, m:0, Z:1, // m is a legacy REAL-basis index μ, never a magnetic eigenvalue.
   mode:'points',
   N:150000,
   isoFrac:0.90,
@@ -1422,20 +1498,25 @@ const I18N = {
     phase_key:'实波函数符号',phase_note:'颜色表示符号，疏密表示概率',phase_iso_note:'曲面颜色表示实波函数的正负',
     neutral_key:'概率分布',neutral_note:'符号着色已关闭',reset_short:'复位',zoom_out:'缩小',zoom_in:'放大',
     controls:'控制面板',model_tag:'单电子模型',tab_orbital:'轨道',tab_appearance:'显示',tab_theory:'模型说明',
-    presets:'常用轨道',s_n:'主量子数',s_l:'角量子数',s_m:'实球谐分量',s_Z:'核电荷数',
-    basis_short:'m 为实球谐基底标签；非零分量由 ±|m| 组合。',sampling:'采样设置',isosurface_settings:'等值面设置',
+    presets:'常用轨道',s_n:'主量子数',s_l:'角量子数',s_m:'实轨道基函数',s_Z:'核电荷数',
+    basis_short:'±k 表示 mₗ = +k 与 −k 态的相干叠加，不是单一磁量子数。',sampling:'采样设置',isosurface_settings:'等值面设置',
     d_pts:'采样点数',d_iso:'包络内概率',d_isoNum:'密度阈值 ρ₀',d_isoRes:'网格精度',res_std:'标准',res_high:'高',res_ultra:'精细',
     k_energy:'能量 Eₙ',k_degen:'壳层简并度',incl_spin:'含自旋 · 2n²',render_settings:'渲染设置',v_int:'点云强度',
     v_size:'粒子尺寸',v_qual:'渲染倍率',layers:'辅助图层',v_phase:'波函数符号着色',sign_hint:'正负瓣分别标色',
     v_nodes:'节面 / 节球',nodes_hint:'ψ = 0 的参考线',v_grid:'坐标轴与尺度',grid_hint:'空间方向与长度参照',v_spin:'自动旋转',spin_hint:'仅旋转观察视角',
     view_presets:'标准视角',oblique:'斜视',reproduce:'保存与复现',v_link:'复制当前视图链接',
     local_link_note:'本地链接用于在同一路径恢复参数；发布到网站后可分享给他人。',
-    model_scope:'模型与约定',basis_long:'采用实球谐与化学相位约定。m > 0 对应 cos(mφ)，m < 0 对应 sin(|m|φ)；非零分量由复球谐 ±|m| 实组合而成，不是 Lz 本征态。',
+    model_scope:'模型与约定',basis_long:'μ 仅为实基编号，不是磁量子数 mₗ。k = |μ| > 0 时，每个实轨道均由 mₗ = +k 与 −k 两个复球谐态相干叠加而成；μ = 0 则与 mₗ = 0 本征态相同。',
+    basis_more:'实基与磁量子数说明 →',basis_definition:'实基与磁量子数',
+    basis_eigen:'复球谐满足 Lz Yₗᵐ = mℏ Yₗᵐ；m 为整数。m ≠ 0 的空间波函数含 eⁱᵐφ，通常为复值，不能用实函数的正负双色完整表示其相位。',
+    basis_stationary:'在当前无外场类氢模型中，实轨道仍是 H 和 L² 的本征态；非零实基不是 Lz 本征态。相干叠加不是概率混合，也不是不同 l 轨道的杂化。',
+    basis_scope:'本版绘制实轨道，不提供独立的复球谐 mₗ 本征态渲染。μ > 0 为 cos 分量，μ < 0 为 sin 分量；Yᴿ 为实球谐，Y 为采用 Condon–Shortley 相位的复球谐。旧网址参数 m 仅兼容旧实基编号；新链接使用 basis=real 与 mu。',
+    basis_real:'实组合',basis_pure:'Lz 本征态',basis_superposed:'相干叠加',
     k_state:'当前基函数',reading_figure:'如何读图',
     reading_note:'电子云表示概率分布，不是电子的运动轨迹。颜色仅标记实波函数的正负，不代表正负电荷。',
     probability_note:'径向概率半径以球内积分定义；等值面按密度阈值定义，两者通常不是同一个边界。视图自动适配范围，实际尺寸以标尺为准。',
-    s_math:'数值检查',verify_hint:'检查归一化、节点、Z 标度、采样统计与等值面。结果采用预设容差。',v_verify:'运行数值自检',
-    references:'参考定义',local_computation:'单文件 · 本地计算',single_file:'单文件版',s_data:'径向概率分布',lg_rdf:'径向概率密度',lg_mp:'最概然半径',lg_mean:'平均半径',
+    s_math:'数值检查',verify_hint:'检查归一化、节点、Z 标度、采样、等值面，以及实／复基转换与角动量关系。结果采用预设容差。',v_verify:'运行数值自检',
+    references:'参考定义',local_computation:'单文件 1.1 · 实基修订',single_file:'单文件版 1.1',s_data:'径向概率分布',lg_rdf:'径向概率密度',lg_mp:'最概然半径',lg_mean:'平均半径',
     radial_statistics:'径向统计',k_mp:'最概然半径',k_mean:'平均半径 ⟨r⟩',k_r90:'径向 90% 概率半径',k_r99:'径向 99% 概率半径',k_nodes:'径向 / 角向节点数',
     s_mode:'显示方式',m_points:'概率点云',m_iso:'概率等值面',hint:'拖动旋转 · 滚轮缩放 · 双击复位',v_reset:'重置视角',
     note_points:'点的位置按 |ψ|² 概率密度采样。屏幕上的疏密和亮度还受投影、粒子尺寸与叠加影响，不能直接读取为概率数值。',
@@ -1447,7 +1528,7 @@ const I18N = {
     linkCopied:'已复制当前视图链接',linkLocalCopied:'已复制本地视图链接（仅适用于相同文件路径）',linkUpdated:'视图参数已写入地址栏',
     mathNote:'氢原子与类氢单电子离子的定态模型。采用非相对论库仑势、无限核质量近似；不含精细结构和外场效应。径向函数由广义拉盖尔多项式给出，角向函数取归一化实球谐。长度以玻尔半径 a₀ 表示。',
     f_nodes:(a,b,c)=>'径向节点 '+a+' · 角向节点 '+b+' · 合计 '+c,
-    formula_units:'r 以 a₀ 为单位；Yᴿ 表示实球谐。',
+    formula_units:'r 以 a₀ 为单位；μ 为实基编号，非磁量子数；Yᴿ 为实球谐。',
     webgl_title:'无法启动三维视图',webgl_help:'此浏览器未能创建 WebGL 上下文。请在浏览器中开启硬件加速后重新打开，或使用支持 WebGL 的浏览器。',
     link_dialog_title:'复制视图链接',link_dialog_help:'浏览器未授予剪贴板权限。请选中并复制以下链接。',close:'关闭',
     a_header:'界面与导出',a_theme:'主题',a_stage:'三维轨道视图',a_canvas:'三维轨道。拖动旋转、滚轮缩放；方向键旋转，加减键缩放，Home 复位。',
@@ -1462,20 +1543,25 @@ const I18N = {
     phase_key:'REAL WAVE-FUNCTION SIGN',phase_note:'Color: sign · Point density: probability',phase_iso_note:'Surface color indicates the sign of ψ',
     neutral_key:'PROBABILITY DISTRIBUTION',neutral_note:'Sign coloring is off',reset_short:'Reset',zoom_out:'Zoom out',zoom_in:'Zoom in',
     controls:'Controls',model_tag:'One-electron model',tab_orbital:'Orbital',tab_appearance:'Display',tab_theory:'Model',
-    presets:'Common orbitals',s_n:'Principal quantum number',s_l:'Angular quantum number',s_m:'Real harmonic component',s_Z:'Nuclear charge number',
-    basis_short:'m labels a real basis; nonzero components combine ±|m|.',sampling:'Sampling',isosurface_settings:'Isosurface settings',
+    presets:'Common orbitals',s_n:'Principal quantum number',s_l:'Angular quantum number',s_m:'Real orbital basis',s_Z:'Nuclear charge number',
+    basis_short:'±k denotes a coherent superposition of mₗ = +k and −k, not a single magnetic quantum number.',sampling:'Sampling',isosurface_settings:'Isosurface settings',
     d_pts:'Sample count',d_iso:'Enclosed probability',d_isoNum:'Density threshold ρ₀',d_isoRes:'Grid resolution',res_std:'Standard',res_high:'High',res_ultra:'Fine',
     k_energy:'Energy Eₙ',k_degen:'Shell degeneracy',incl_spin:'With spin · 2n²',render_settings:'Rendering',v_int:'Point intensity',
     v_size:'Point size',v_qual:'Render scale',layers:'Reference layers',v_phase:'Wave-function sign',sign_hint:'Separate colors for positive and negative lobes',
     v_nodes:'Nodal surfaces',nodes_hint:'Reference lines where ψ = 0',v_grid:'Axes and scale',grid_hint:'Orientation and physical length',v_spin:'Auto-rotate',spin_hint:'Rotates the camera only',
     view_presets:'Camera views',oblique:'Oblique',reproduce:'Save and reproduce',v_link:'Copy current view link',
     local_link_note:'A local link restores parameters at the same file path. Hosted links can be shared with others.',
-    model_scope:'Model and conventions',basis_long:'Real spherical harmonics use the chemistry phase convention. m > 0 selects cos(mφ), m < 0 selects sin(|m|φ). Nonzero components are real combinations of complex ±|m| harmonics, not Lz eigenstates.',
+    model_scope:'Model and conventions',basis_long:'μ is a real-basis index, not the magnetic quantum number mₗ. For k = |μ| > 0, each real orbital is a coherent superposition of mₗ = +k and −k. For μ = 0 it coincides with the mₗ = 0 eigenstate.',
+    basis_more:'Real basis and magnetic quantum number →',basis_definition:'Real basis and magnetic quantum number',
+    basis_eigen:'Complex harmonics obey Lz Yₗᵐ = mℏ Yₗᵐ, with integer m. For m ≠ 0 the spatial function contains eⁱᵐφ and is generally complex. Two sign colors cannot represent its full phase.',
+    basis_stationary:'In this field-free hydrogenic model, real orbitals remain eigenstates of H and L²; nonzero real components are not Lz eigenstates. A coherent superposition is not an incoherent mixture or a hybrid of different l orbitals.',
+    basis_scope:'This edition renders real orbitals only, not separate complex mₗ eigenstates. μ > 0 selects cos; μ < 0 selects sin. Yᴿ is real; Y uses the Condon–Shortley convention. Legacy URL parameter m is read only as the old real-basis index; new links use basis=real and mu.',
+    basis_real:'Real combination',basis_pure:'Lz eigenstate',basis_superposed:'Coherent superposition',
     k_state:'Current basis function',reading_figure:'Reading the figure',
     reading_note:'The cloud represents a probability distribution, not an electron trajectory. Colors indicate the sign of the real wave function, not electric charge.',
     probability_note:'Radial probability radii use spherical integrals. Isosurfaces use a density threshold, so these are generally different boundaries. The view fits the orbital; read physical sizes from the scale bar.',
-    s_math:'Numerical checks',verify_hint:'Check normalization, nodes, Z scaling, sampling and isosurfaces against preset tolerances.',v_verify:'Run numerical self-test',
-    references:'Reference definitions',local_computation:'Single file · Local',single_file:'Single-file edition',s_data:'Radial probability',lg_rdf:'Radial density',lg_mp:'Most probable',lg_mean:'Mean radius',
+    s_math:'Numerical checks',verify_hint:'Check normalization, nodes, Z scaling, sampling, isosurfaces, real/complex basis conversion and angular momentum against preset tolerances.',v_verify:'Run numerical self-test',
+    references:'Reference definitions',local_computation:'Single file 1.1 · Real basis',single_file:'Single-file 1.1',s_data:'Radial probability',lg_rdf:'Radial density',lg_mp:'Most probable',lg_mean:'Mean radius',
     radial_statistics:'Radial statistics',k_mp:'Most probable radius',k_mean:'Mean radius ⟨r⟩',k_r90:'Radial 90% probability radius',k_r99:'Radial 99% probability radius',k_nodes:'Radial / angular nodes',
     s_mode:'Display mode',m_points:'Point cloud',m_iso:'Isosurface',hint:'Drag to rotate · Scroll to zoom · Double-click to reset',v_reset:'Reset view',
     note_points:'Point positions are sampled from |ψ|². Screen density and brightness also depend on projection, point size and blending; pixels are not quantitative probability readings.',
@@ -1487,7 +1573,7 @@ const I18N = {
     linkCopied:'Current view link copied',linkLocalCopied:'Local view link copied (requires the same file path)',linkUpdated:'View parameters written to the address bar',
     mathNote:'Stationary states of hydrogen and hydrogen-like one-electron ions. The model uses a nonrelativistic Coulomb potential and infinite nuclear mass; fine structure and external fields are excluded. Radial functions use generalized Laguerre polynomials, with normalized real spherical harmonics for the angular part. Lengths are in Bohr radii a₀.',
     f_nodes:(a,b,c)=>'Radial nodes '+a+' · Angular nodes '+b+' · Total '+c,
-    formula_units:'r is in a₀; Yᴿ denotes a real spherical harmonic.',
+    formula_units:'r is in a₀; μ indexes a real basis, not an Lz eigenvalue. Yᴿ is real.',
     webgl_title:'3D view could not start',webgl_help:'This browser could not create a WebGL context. Enable hardware acceleration and reopen the file, or use a browser with WebGL support.',
     link_dialog_title:'Copy view link',link_dialog_help:'Clipboard permission is unavailable. Select and copy the link below.',close:'Close',
     a_header:'Appearance and export',a_theme:'Theme',a_stage:'Three-dimensional orbital view',a_canvas:'3D orbital. Drag or use arrow keys to rotate; scroll or use plus and minus to zoom; Home resets the view.',
@@ -1518,8 +1604,7 @@ function orbitalLabel(n,l,m){
   const base = n + LNAME[l];
   if (l===0) return base;
   if (l<=3 && MNAME[l] && MNAME[l][String(m)]) return n + MNAME[l][String(m)];
-  const s = m>0 ? '+' : (m<0 ? '−' : '');
-  return base + ' (m=' + (m===0 ? '0' : s + Math.abs(m)) + ')';
+  return base + ' · ' + (m===0 ? 'Yₗ⁰' : (m>0?'cos(':'sin(')+Math.abs(m)+'φ)');
 }
 
 /* =====================================================================
@@ -2044,7 +2129,7 @@ function proj(VP, p, w, h){
    控件绑定
    ===================================================================== */
 /* =====================================================================
-   URL 参数（可分享的深链）：?n=3&l=2&m=0&mode=iso&N=200000&iso=90&isoN=176&sync=1
+   URL 参数（实基）：?basis=real&n=3&l=2&mu=0&mode=iso&N=200000&iso=90&isoN=176&sync=1
    ===================================================================== */
 function initFromURL(){
   const q = new URLSearchParams(location.search.replace(/^[?&]/, '').replace(/;/g, '&'));
@@ -2054,7 +2139,8 @@ function initFromURL(){
   n = Math.max(1, Math.min(6, n));
   let l = Math.round(num('l', App.l));
   l = Math.max(0, Math.min(Math.min(5, n-1), l));
-  let m = Math.round(num('m', App.m));
+  // Legacy m is a REAL-basis index only; mu takes priority in new URLs.
+  let m = Math.round(num('mu', num('m', App.m)));
   m = Math.max(-l, Math.min(l, m));
   App.n = n; App.l = l; App.m = m;
   App.Z = Math.max(1, Math.min(ION.length-1, Math.round(num('Z', 1))));
@@ -2094,7 +2180,8 @@ function initFromURL(){
 function stateQuery(){
   const q = new URLSearchParams();
   q.set('theme', THEME.id);
-  q.set('n', App.n); q.set('l', App.l); q.set('m', App.m);
+  q.set('basis', 'real');
+  q.set('n', App.n); q.set('l', App.l); q.set('mu', App.m);
   if (App.Z !== 1) q.set('Z', App.Z);
   q.set('mode', App.mode);
   q.set('N', App.N);q.set('iso',Math.round(App.isoFrac*100));q.set('isoN',App.isoRes);
@@ -2151,6 +2238,58 @@ function buildOrbitalUI(){
     b.onclick=()=>{if(App.Z===Z)return;App.Z=Z;syncOrbitalUI();regenerate(true);};zBox.appendChild(b);
   }
 }
+
+/* Real-basis descriptor. μ is an index, not an eigenvalue of Lz.
+   NIST DLMF 14.30.1, 14.30.6 (Condon–Shortley convention):
+   YR_l,+k = [Y_l,-k + (-1)^k Y_l,+k]/sqrt(2)
+   YR_l,-k = i[Y_l,-k - (-1)^k Y_l,+k]/sqrt(2). */
+function realBasisInfo(l,mu){
+  const k=Math.abs(mu);
+  return {l,mu,k,pure:k===0,kind:mu===0?'axial':mu>0?'cos':'sin',
+    // [magnetic quantum number, real coefficient, imaginary coefficient]
+    terms: k===0 ? [[0,1,0]] : mu>0 ? [[-k,Math.SQRT1_2,0],[k,(k%2?-1:1)*Math.SQRT1_2,0]]
+      : [[-k,0,Math.SQRT1_2],[k,0,(k%2?1:-1)*Math.SQRT1_2]]};
+}
+function yComplexHTML(l,ml){
+  return 'Y<sub>'+l+'</sub><sup>'+(ml>0?'+':'')+(ml<0?'−'+Math.abs(ml):ml)+'</sup>';
+}
+function realCombinationHTML(l,mu){
+  const b=realBasisInfo(l,mu),k=b.k;
+  if(b.pure)return yComplexHTML(l,0);
+  const sign=mu>0?(k%2?' − ':' + '):(k%2?' + ':' − ');
+  return (mu<0?'i':'')+'['+yComplexHTML(l,-k)+sign+yComplexHTML(l,k)+']/√2';
+}
+function harmonicShortLabel(l,mu){
+  if(mu===0)return 'mₗ = 0';
+  return '±'+Math.abs(mu)+' · '+(mu>0?'cos':'sin');
+}
+function basisNatureText(mu){
+  if(mu===0)return t('basis_pure')+' · mₗ = 0';
+  const k=Math.abs(mu);
+  return App.lang==='zh'?'mₗ = ±'+k+' 的相干叠加':'Superposition of mₗ = ±'+k;
+}
+function updateBasisUI(){
+  const {l,m:mu}=App,b=realBasisInfo(l,mu),k=b.k;
+  document.getElementById('basisKind').textContent=basisNatureText(mu);
+  document.getElementById('basisFormula').innerHTML='Y<sup>R</sup> = '+realCombinationHTML(l,mu);
+  const h=k===1?'ℏ':k+'ℏ';
+  document.getElementById('basisExplanation').textContent=b.pure
+    ? (App.lang==='zh'?'测量 Lz 总得到 0；这个实轨道具有确定的 mₗ = 0。'
+       :'Measuring Lz always gives 0; this orbital has a definite mₗ = 0.')
+    : (App.lang==='zh'?'测量 Lz 得到 +'+h+' 或 −'+h+' 的概率各为 50%。⟨Lz⟩ = 0 不代表 mₗ = 0。'
+       :'Lz measurements give +'+h+' or −'+h+', each with 50% probability. ⟨Lz⟩ = 0 does not mean mₗ = 0.');
+  document.getElementById('basisTheoryFormula').innerHTML=
+    'Y<sub>l</sub><sup>m</sup> ∝ P<sub>l</sub><sup>m</sup>(cos θ)e<sup>imφ</sup><br>'+
+    'Y<sup>R</sup><sub>l,+k</sub> = [Y<sub>l</sub><sup>−k</sup> + (−1)<sup>k</sup>Y<sub>l</sub><sup>+k</sup>]/√2<br>'+
+    'Y<sup>R</sup><sub>l,−k</sub> = i[Y<sub>l</sub><sup>−k</sup> − (−1)<sup>k</sup>Y<sub>l</sub><sup>+k</sup>]/√2<br>'+
+    'k = |μ| > 0;　Y<sup>R</sup><sub>l,0</sub> = Y<sub>l</sub><sup>0</sup>';
+}
+function basisExportText(l,mu){
+  const k=Math.abs(mu),sgn=mu>0?(k%2?' − ':' + '):(k%2?' + ':' − ');
+  const y=ml=>'Y('+l+','+(ml>0?'+':'')+ml+')';
+  return 'Yᴿ = '+(k===0?y(0):(mu<0?'i':'')+'['+y(-k)+sgn+y(k)+']/√2');
+}
+
 function syncOrbitalUI(){
   document.querySelectorAll('#nChips button').forEach(b=>setPressed(b,+b.dataset.n===App.n));
   document.querySelectorAll('#zChips button').forEach(b=>setPressed(b,+b.dataset.z===App.Z));
@@ -2161,8 +2300,8 @@ function syncOrbitalUI(){
   for(let m=-App.l;m<=App.l;m++){
     const b=document.createElement('button');b.className='chip';b.dataset.m=m;
     const short=App.l<=3?labelHTML(orbitalLabel(App.n,App.l,m)):App.n+LNAME[App.l];
-    b.innerHTML=short+'<span class="minor">m = '+(m<0?'−'+Math.abs(m):m)+'</span>';
-    b.title=orbitalLabel(App.n,App.l,m)+' · '+t('s_m')+' m = '+m;
+    b.innerHTML=short+'<span class="minor">'+harmonicShortLabel(App.l,m)+'</span>';
+    b.title=orbitalLabel(App.n,App.l,m)+' · '+basisNatureText(m);
     b.setAttribute('aria-label',b.title);setPressed(b,m===App.m);
     b.onclick=()=>{if(App.m===m)return;App.m=m;syncOrbitalUI();regenerate(true);};M.appendChild(b);
     if(oldFocus!==undefined&&+oldFocus===m)b.focus({preventScroll:true});
@@ -2170,8 +2309,9 @@ function syncOrbitalUI(){
   const lab=orbitalLabel(App.n,App.l,App.m);
   document.getElementById('badgeTitle').innerHTML=labelHTML(lab);
   document.getElementById('ionBadge').textContent=ION[App.Z]+(App.Z===1?(App.lang==='zh'?' · 氢原子':' · Hydrogen'):(App.lang==='zh'?' · 类氢离子':' · Hydrogenic ion'));
-  document.getElementById('stateMeta').textContent='n = '+App.n+' · l = '+App.l+' · m = '+App.m;
-  document.getElementById('vState').innerHTML=labelHTML(lab)+' · Z = '+App.Z;
+  document.getElementById('stateMeta').textContent='n = '+App.n+' · l = '+App.l+' · '+(App.m===0?'mₗ = 0':t('basis_real'));
+  updateBasisUI();
+  document.getElementById('vState').innerHTML=labelHTML(lab)+' · μ = '+App.m+' · Z = '+App.Z;
   document.getElementById('vE').textContent='−'+(RY_EV*App.Z*App.Z/(App.n*App.n)).toFixed(4)+' eV';
   document.getElementById('vG').textContent=2*App.n*App.n;
   document.querySelectorAll('[data-preset]').forEach(b=>setPressed(b,b.dataset.preset===[App.n,App.l,App.m].join(',')));
@@ -2180,7 +2320,8 @@ function syncOrbitalUI(){
 function updateFormula(){
   const {n,l,m,Z}=App;
   const nr=n+','+l, zr=Z===1?'r':Z+'r',twzr=(2*Z)+'r';
-  let f='ψ<sub>'+n+','+l+','+m+'</sub> = R<sub>'+nr+'</sub> · Y<sup>R</sup><sub>'+l+','+m+'</sub>';
+  let f='ψ<sup>R</sup><sub>'+n+','+l+',μ='+m+'</sub> = R<sub>'+nr+'</sub> · Y<sup>R</sup><sub>'+l+',μ='+m+'</sub>';
+  f+='<br>Y<sup>R</sup> = '+realCombinationHTML(l,m);
   f+='<br>R<sub>'+nr+'</sub> ∝ e<sup>−'+zr+'/'+n+'</sup> ('+twzr+'/'+n+')<sup>'+l+'</sup>';
   f+='<br>　· L<sup>'+(2*l+1)+'</sup><sub>'+(n-l-1)+'</sub>('+twzr+'/'+n+')';
   f+='<br>E<sub>'+n+'</sub> = −'+(0.5*Z*Z/(n*n)).toFixed(5)+' E<sub>h</sub>';
@@ -2289,7 +2430,7 @@ function exportFigure(){
     const source=GLR.canvas,out=document.createElement('canvas');
     const ratio=source.width/Math.max(1,source.clientWidth);
     const cropTop=0,cropBottom=0;
-    const top=Math.round(100*ratio),bottom=Math.round(58*ratio);
+    const top=Math.round(146*ratio),bottom=Math.round(58*ratio);
     const pictureHeight=Math.max(1,source.height-cropTop-cropBottom);
     out.width=source.width;out.height=pictureHeight+top+bottom;
     const c=out.getContext('2d');c.fillStyle=THEME.bg;c.fillRect(0,0,out.width,out.height);
@@ -2300,10 +2441,12 @@ function exportFigure(){
     const small=source.clientWidth<550;
     const lab=document.getElementById('badgeTitle').textContent;
     write(lab+'  ·  '+ION[App.Z],25,39,small?24:28,THEME.ink,'500 ');
-    const meta='n = '+App.n+'    l = '+App.l+'    m = '+App.m+'    Z = '+App.Z;
+    const meta='n = '+App.n+'    l = '+App.l+'    Z = '+App.Z;
     write(meta,25,65,11,THEME.muted);
     const modeText=t('m_'+App.mode)+(App.mode==='iso'?' · P = '+Math.round(App.isoFrac*100)+'%':' · N = '+App.N.toLocaleString());
     write(modeText,25,85,11,THEME.muted);
+    write(basisNatureText(App.m),25,108,small?10:11,THEME.ink);
+    write(basisExportText(App.l,App.m),25,131,small?10:12,THEME.muted);
     if(App.phase){
       const bx=small?source.clientWidth-136:source.clientWidth-177;
       [[THEME.positive,'ψ > 0'],[THEME.negative,'ψ < 0']].forEach(([color,txt],i)=>{
@@ -2353,6 +2496,7 @@ function bindControls(){
   $('zoomOutBtn').onclick=()=>{Cam.zoom=Math.min(14,Cam.zoom*1.2);};$('zoomInBtn').onclick=()=>{Cam.zoom=Math.max(.06,Cam.zoom/1.2);};
   document.querySelectorAll('[data-view]').forEach(b=>{b.onclick=()=>{Cam.vAz=Cam.vEl=0;if(b.dataset.view==='oblique'){resetCamera();return;}const views={x:[Math.PI/2,0],y:[0,0],z:[0,Math.PI/2-.001]};[Cam.az,Cam.el]=views[b.dataset.view];};});
   GLR.canvas.addEventListener('keydown',e=>{if(e.key==='ArrowLeft')Cam.az-=.09;else if(e.key==='ArrowRight')Cam.az+=.09;else if(e.key==='ArrowUp')Cam.el+=.09;else if(e.key==='ArrowDown')Cam.el-=.09;else if(e.key==='+'||e.key==='=')Cam.zoom=Math.max(.06,Cam.zoom/1.12);else if(e.key==='-')Cam.zoom=Math.min(14,Cam.zoom*1.12);else if(e.key==='Home')resetCamera();else return;e.preventDefault();Cam.vAz=Cam.vEl=0;});
+  $('basisDetailBtn').onclick=()=>selectPanelTab('theory',true);
   $('shotBtn').onclick=exportFigure;
   $('linkBtn').onclick=async()=>{
     const url=new URL(location.href);url.search=stateQuery();url.hash='';
